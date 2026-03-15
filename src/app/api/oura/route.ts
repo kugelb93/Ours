@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OuraClient, getDateRange } from "@/lib/oura";
 
-function getClient(): OuraClient {
-  const token = process.env.OURA_API_TOKEN;
-  if (!token) throw new Error("OURA_API_TOKEN not configured");
+function getClient(request: NextRequest): OuraClient {
+  // Try env var first, then fall back to client-provided token
+  let token = process.env.OURA_API_TOKEN;
+  if (!token) {
+    const authHeader = request.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.slice(7);
+    }
+  }
+  if (!token) throw new Error("No Oura API token available");
   return new OuraClient(token);
 }
 
@@ -19,7 +26,7 @@ export async function GET(request: NextRequest) {
     : getDateRange(days);
 
   try {
-    const client = getClient();
+    const client = getClient(request);
 
     switch (type) {
       case "personal_info":
