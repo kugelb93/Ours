@@ -4,573 +4,703 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Oura Dashboard</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0a0f;--bg2:#12121a;--card:#1a1a2e;--card-h:#22223a;--border:#2a2a3e;--text:#e4e4ef;--text2:#8888a0;--blue:#4f8ff7;--purple:#8b5cf6;--green:#34d399;--yellow:#fbbf24;--red:#f87171;--cyan:#22d3ee}
-body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;overflow-x:hidden}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg2)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+:root{--bg:#0a0a0f;--bg2:#12121a;--card:#1a1a2e;--card-h:#22223a;--bdr:#2a2a3e;--t1:#e4e4ef;--t2:#8888a0;--blue:#4f8ff7;--purple:#8b5cf6;--green:#34d399;--yellow:#fbbf24;--red:#f87171;--cyan:#22d3ee}
+body{background:var(--bg);color:var(--t1);font-family:system-ui,-apple-system,sans-serif;display:flex;min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+button{cursor:pointer;font-family:inherit}
+input{font-family:inherit}
+
+/* Nav */
+#nav{position:fixed;left:0;top:0;height:100%;width:220px;background:var(--bg2);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:50}
+#nav .logo{padding:20px;border-bottom:1px solid var(--bdr)}
+#nav .logo h1{font-size:18px;font-weight:700;background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#nav .logo p{font-size:10px;color:var(--t2);margin-top:2px}
+#nav .links{flex:1;padding-top:12px;overflow-y:auto}
+#nav .links button{display:flex;align-items:center;gap:12px;width:100%;padding:10px 20px;font-size:14px;border:none;background:transparent;color:var(--t2);border-right:2px solid transparent;transition:all .15s}
+#nav .links button:hover{color:var(--t1);background:var(--card)}
+#nav .links button.active{color:var(--blue);background:rgba(79,143,247,.1);border-right-color:var(--blue)}
+#nav .links button .icon{font-size:16px;width:20px;text-align:center}
+#nav .foot{padding:16px;border-top:1px solid var(--bdr)}
+#nav .foot button{font-size:10px;color:var(--t2);background:none;border:none}
+#nav .foot button:hover{color:var(--red)}
+#nav .foot p{font-size:10px;color:var(--t2);margin-top:8px}
+
+/* Main */
+#main{margin-left:220px;flex:1;padding:24px;min-height:100vh}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.page-header h2{font-size:24px;font-weight:700}
+.page-header p{font-size:13px;color:var(--t2);margin-top:4px}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:20px}
+.card-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.card-sub{font-size:11px;color:var(--t2);margin-bottom:16px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+
+/* Metrics */
+.metric-label{font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.metric-val{font-size:24px;font-weight:700}
+.metric-unit{font-size:13px;color:var(--t2);margin-left:4px}
+
+/* Date selector */
+.date-sel{display:flex;gap:4px;background:var(--bg2);border-radius:8px;padding:4px}
+.date-sel button{padding:4px 12px;border-radius:6px;font-size:12px;font-weight:500;border:none;background:transparent;color:var(--t2)}
+.date-sel button.active{background:var(--blue);color:#fff}
+
+/* Score ring */
+.ring-wrap{position:relative;display:inline-block}
+.ring-wrap .ring-text{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700}
 .score-ring{transform:rotate(-90deg)}
-.animate-spin{animation:spin 1s linear infinite}
+
+/* Charts */
+.chart-container{position:relative;width:100%;overflow:hidden}
+canvas{display:block;width:100%!important}
+
+/* Spinner */
+.spinner{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;gap:16px}
+.spinner .dot{width:32px;height:32px;border:2px solid var(--bdr);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite}
+.spinner p{font-size:14px;color:var(--t2)}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* Token setup */
+#setup{min-height:100vh;display:flex;align-items:center;justify-content:center;width:100%}
+#setup .box{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:32px;max-width:400px;width:100%;margin:16px}
+#setup h1{font-size:24px;font-weight:700;background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:8px}
+#setup .sub{font-size:13px;color:var(--t2);text-align:center;margin-bottom:24px}
+#setup input{width:100%;padding:12px 16px;background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;font-size:14px;color:var(--t1);outline:none;margin-bottom:16px}
+#setup input:focus{border-color:var(--blue)}
+#setup .btn{width:100%;padding:12px;background:linear-gradient(90deg,var(--blue),var(--purple));color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:500}
+#setup .btn:disabled{opacity:.5}
+#setup .note{font-size:10px;color:var(--t2);text-align:center;margin-top:16px}
+
+/* Chat */
+#chat-page{display:flex;flex-direction:column;height:calc(100vh - 48px)}
+#chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:16px;padding-bottom:16px}
+.chat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:24px}
+.chat-empty .icon{font-size:40px}
+.chat-empty h3{font-size:18px;font-weight:600}
+.chat-empty p{font-size:13px;color:var(--t2);max-width:400px;text-align:center;margin-top:4px}
+.chat-suggestions{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:500px;width:100%}
+.chat-suggestions button{text-align:left;font-size:12px;padding:12px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;color:var(--t2)}
+.chat-suggestions button:hover{background:var(--card-h);color:var(--t1)}
+.msg{display:flex}.msg.user{justify-content:flex-end}.msg.ai{justify-content:flex-start}
+.msg .bubble{max-width:600px;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+.msg.user .bubble{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff}
+.msg.ai .bubble{background:var(--card);border:1px solid var(--bdr);color:var(--t1)}
+.typing{display:flex;gap:4px;padding:12px 16px}.typing span{width:8px;height:8px;background:var(--t2);border-radius:4px;animation:bounce .6s infinite}
 @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-.animate-bounce{animation:bounce .6s infinite}
-.chat-user{background:linear-gradient(135deg,var(--blue),var(--purple))}
-.chat-ai{background:var(--card);border:1px solid var(--border)}
+.typing span:nth-child(2){animation-delay:.15s}.typing span:nth-child(3){animation-delay:.3s}
+#chat-form{display:flex;gap:12px;padding-top:16px;border-top:1px solid var(--bdr)}
+#chat-form input{flex:1;padding:12px 16px;background:var(--card);border:1px solid var(--bdr);border-radius:12px;font-size:14px;color:var(--t1);outline:none}
+#chat-form input:focus{border-color:var(--blue)}
+#chat-form button{padding:12px 24px;background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:500}
+#chat-form button:disabled{opacity:.5}
+
+/* Contributor grid */
+.contribs{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.contrib{display:flex;flex-direction:column;align-items:center;gap:6px}
+.contrib span{font-size:10px;color:var(--t2);text-align:center;text-transform:capitalize;max-width:70px;line-height:1.2}
+
+/* Workout list */
+.workout-item{display:flex;justify-content:space-between;align-items:center;padding:12px;background:var(--bg2);border-radius:8px}
+.workout-item .name{font-size:14px;font-weight:500;text-transform:capitalize}
+.workout-item .date{font-size:12px;color:var(--t2)}
+.workout-stats{display:flex;gap:24px;font-size:13px}
+.workout-stats .stat-label{font-size:11px;color:var(--t2)}
+.workout-stats .stat-val{font-weight:500}
+
+/* Error */
+.error-box{text-align:center;padding:80px 0;color:var(--red);font-size:14px}
+
+/* API key row for chat */
+.api-key-row{display:flex;gap:8px;margin-bottom:16px}
+.api-key-row input{flex:1;padding:8px 12px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;font-size:13px;color:var(--t1);outline:none}
+.api-key-row button{padding:8px 16px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px}
 </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel" data-type="module">
-const {useState,useEffect,useCallback,useRef,useMemo,createContext,useContext}=React;
-const {LineChart,Line,AreaChart,Area,BarChart,Bar,XAxis,YAxis,Tooltip,ResponsiveContainer,CartesianGrid,Legend}=Recharts;
-
+<div id="app"></div>
+<script>
 // ── Oura API ──
 const OURA="https://api.ouraring.com";
-async function ouraFetch(endpoint,token,params={}){
-  const url=new URL(`${OURA}/${endpoint}`);
-  Object.entries(params).forEach(([k,v])=>{if(v)url.searchParams.set(k,v)});
-  const r=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
-  if(!r.ok)throw new Error(`Oura API ${r.status}: ${await r.text()}`);
+async function ouraFetch(ep,token,params={}){
+  const u=new URL(`${OURA}/${ep}`);
+  Object.entries(params).forEach(([k,v])=>{if(v)u.searchParams.set(k,v)});
+  const r=await fetch(u,{headers:{Authorization:`Bearer ${token}`}});
+  if(!r.ok)throw new Error(`Oura ${r.status}`);
   return r.json();
 }
-function dateRange(days){
-  const e=new Date(),s=new Date();s.setDate(s.getDate()-days);
-  return{start_date:s.toISOString().split("T")[0],end_date:e.toISOString().split("T")[0]};
+function dateRange(d){const e=new Date(),s=new Date();s.setDate(s.getDate()-d);return{start_date:s.toISOString().split("T")[0],end_date:e.toISOString().split("T")[0]}}
+const EP={daily_sleep:"v2/usercollection/daily_sleep",sleep:"v2/usercollection/sleep",daily_activity:"v2/usercollection/daily_activity",daily_readiness:"v2/usercollection/daily_readiness",heartrate:"v2/usercollection/heartrate",daily_spo2:"v2/usercollection/daily_spo2",daily_stress:"v2/usercollection/daily_stress",workouts:"v2/usercollection/workout",daily_resilience:"v2/usercollection/daily_resilience",daily_cardiovascular_age:"v2/usercollection/daily_cardiovascular_age",vo2_max:"v2/usercollection/vo2_max"};
+async function fetchType(token,type,days){
+  const r=dateRange(days);
+  const p=type==="heartrate"?{start_datetime:`${r.start_date}T00:00:00+00:00`,end_datetime:`${r.end_date}T23:59:59+00:00`}:r;
+  const res=await ouraFetch(EP[type],token,p);return res.data||[];
 }
-const ENDPOINTS={
-  daily_sleep:"v2/usercollection/daily_sleep",
-  sleep:"v2/usercollection/sleep",
-  daily_activity:"v2/usercollection/daily_activity",
-  daily_readiness:"v2/usercollection/daily_readiness",
-  heartrate:"v2/usercollection/heartrate",
-  daily_spo2:"v2/usercollection/daily_spo2",
-  daily_stress:"v2/usercollection/daily_stress",
-  workouts:"v2/usercollection/workout",
-  daily_resilience:"v2/usercollection/daily_resilience",
-  daily_cardiovascular_age:"v2/usercollection/daily_cardiovascular_age",
-  vo2_max:"v2/usercollection/vo2_max",
-  sessions:"v2/usercollection/session",
-};
-function useOura(type,days=14){
-  const token=useContext(TokenCtx).token;
-  const[data,setData]=useState(null);
-  const[loading,setLoading]=useState(true);
-  const[error,setError]=useState(null);
-  const fetchData=useCallback(async()=>{
-    if(!token){setLoading(false);return}
-    setLoading(true);setError(null);
-    try{
-      const ep=ENDPOINTS[type];if(!ep)throw new Error("Unknown:"+type);
-      const range=dateRange(days);
-      const params=type==="heartrate"
-        ?{start_datetime:`${range.start_date}T00:00:00+00:00`,end_datetime:`${range.end_date}T23:59:59+00:00`}
-        :range;
-      const r=await ouraFetch(ep,token,params);
-      setData(r.data||[]);
-    }catch(e){setError(e.message)}finally{setLoading(false)}
-  },[token,type,days]);
-  useEffect(()=>{fetchData()},[fetchData]);
-  return{data,loading,error,refetch:fetchData};
-}
-async function fetchAllData(token,days=30){
-  const range=dateRange(days);
+async function fetchAll(token,days=30){
   const types=["daily_sleep","daily_activity","daily_readiness","daily_spo2","daily_stress","daily_resilience"];
-  const results=await Promise.allSettled(types.map(async t=>{
-    const r=await ouraFetch(ENDPOINTS[t],token,range);return{type:t,data:r.data};
-  }));
-  const all={};results.forEach(r=>{if(r.status==="fulfilled")all[r.value.type]=r.value.data});
-  try{const s=await ouraFetch(ENDPOINTS.sleep,token,dateRange(7));all.sleep_periods=s.data}catch{}
-  return all;
+  const results=await Promise.allSettled(types.map(t=>fetchType(token,t,days)));
+  const d={};types.forEach((t,i)=>{if(results[i].status==="fulfilled")d[t]=results[i].value});
+  try{d.sleep=await fetchType(token,"sleep",7)}catch{}
+  return d;
 }
 
 // ── Helpers ──
 const fmtDur=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>0?`${h}h ${m}m`:`${m}m`};
 const fmtTime=iso=>new Date(iso).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",hour12:true});
-const scoreColor=s=>s==null?"var(--text2)":s>=85?"var(--green)":s>=70?"var(--yellow)":"var(--red)";
-const ringStroke=s=>s==null?"#2a2a3e":s>=85?"#34d399":s>=70?"#fbbf24":"#f87171";
+const scoreClr=s=>s==null?"#8888a0":s>=85?"#34d399":s>=70?"#fbbf24":"#f87171";
+const avg=(arr,k)=>{const v=arr?.filter(x=>x[k]!=null);return v?.length?Math.round(v.reduce((a,b)=>a+b[k],0)/v.length):null};
+const h=tag=>document.createElement(tag);
+const txt=t=>document.createTextNode(t);
 
-// ── Token Context ──
-const TokenCtx=createContext({token:null,setToken:()=>{},clear:()=>{}});
-function TokenProvider({children}){
-  const[token,setT]=useState(()=>localStorage.getItem("oura_token"));
-  const setToken=t=>{localStorage.setItem("oura_token",t);setT(t)};
-  const clear=()=>{localStorage.removeItem("oura_token");setT(null)};
-  return React.createElement(TokenCtx.Provider,{value:{token,setToken,clear}},children);
-}
+// ── Chart drawing on Canvas ──
+function drawLineChart(canvas,datasets,labels,opts={}){
+  const ctx=canvas.getContext("2d");
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth,H=opts.height||220;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.height=H+"px";
+  ctx.scale(dpr,dpr);
+  const pad={t:20,r:20,b:30,l:50};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
 
-// ── Components ──
-function ScoreRing({score,size=120,sw=8}){
-  const r=(size-sw)/2,c=2*Math.PI*r,p=score!=null?(score/100)*c:0;
-  return React.createElement("div",{style:{position:"relative",width:size,height:size,display:"inline-block"}},
-    React.createElement("svg",{width:size,height:size,className:"score-ring"},
-      React.createElement("circle",{cx:size/2,cy:size/2,r,fill:"none",stroke:"#2a2a3e",strokeWidth:sw}),
-      React.createElement("circle",{cx:size/2,cy:size/2,r,fill:"none",stroke:ringStroke(score),strokeWidth:sw,strokeLinecap:"round",strokeDasharray:c,strokeDashoffset:c-p,style:{transition:"stroke-dashoffset 1s ease"}})
-    ),
-    React.createElement("div",{style:{position:"absolute",top:0,left:0,width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size>80?24:16,fontWeight:700}},score??"\u2014")
-  );
-}
-function Card({children,title,subtitle,className=""}){
-  return React.createElement("div",{style:{background:"var(--card)",border:"1px solid var(--border)",borderRadius:12,padding:20},className},
-    (title||subtitle)?React.createElement("div",{style:{marginBottom:16}},
-      title&&React.createElement("h3",{style:{fontSize:14,fontWeight:600}},title),
-      subtitle&&React.createElement("p",{style:{fontSize:11,color:"var(--text2)",marginTop:2}},subtitle)
-    ):null,children);
-}
-function Metric({label,value,unit,color="var(--text)"}){
-  return React.createElement(Card,null,
-    React.createElement("div",{style:{fontSize:11,color:"var(--text2)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}},label),
-    React.createElement("div",{style:{display:"flex",alignItems:"baseline",gap:4}},
-      React.createElement("span",{style:{fontSize:24,fontWeight:700,color}},value??"\u2014"),
-      unit&&React.createElement("span",{style:{fontSize:13,color:"var(--text2)"}},unit))
-  );
-}
-function DateSelector({selected,onChange}){
-  return React.createElement("div",{style:{display:"flex",gap:4,background:"var(--bg2)",borderRadius:8,padding:4}},
-    [7,14,30,90].map(d=>React.createElement("button",{key:d,onClick:()=>onChange(d),
-      style:{padding:"4px 12px",borderRadius:6,fontSize:12,fontWeight:500,border:"none",cursor:"pointer",
-        background:selected===d?"var(--blue)":"transparent",color:selected===d?"#fff":"var(--text2)"}},d+"D"))
-  );
-}
-function Spinner({msg="Loading data..."}){
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 0",gap:16}},
-    React.createElement("div",{className:"animate-spin",style:{width:32,height:32,border:"2px solid var(--border)",borderTopColor:"var(--blue)",borderRadius:"50%"}}),
-    React.createElement("p",{style:{fontSize:14,color:"var(--text2)"}},msg)
-  );
-}
-function Err({message}){
-  return React.createElement("div",{style:{textAlign:"center",padding:"80px 0",color:"var(--red)",fontSize:14}},message);
-}
-function CTooltip({active,payload,label}){
-  if(!active||!payload?.length)return null;
-  return React.createElement("div",{style:{background:"var(--card)",border:"1px solid var(--border)",borderRadius:8,padding:12,boxShadow:"0 4px 20px rgba(0,0,0,.4)"}},
-    React.createElement("p",{style:{fontSize:11,color:"var(--text2)",marginBottom:6}},label),
-    payload.map((e,i)=>React.createElement("div",{key:i,style:{display:"flex",alignItems:"center",gap:8,fontSize:13}},
-      React.createElement("div",{style:{width:8,height:8,borderRadius:4,background:e.color}}),
-      React.createElement("span",{style:{color:"var(--text2)"}},e.name+":"),
-      React.createElement("span",{style:{fontWeight:500}},e.value)))
-  );
-}
-
-// ── Pages ──
-function OverviewPage(){
-  const[days,setDays]=useState(14);
-  const{data:sleep,loading:l1,error:e1}=useOura("daily_sleep",days);
-  const{data:activity,loading:l2,error:e2}=useOura("daily_activity",days);
-  const{data:readiness,loading:l3,error:e3}=useOura("daily_readiness",days);
-  if(l1||l2||l3)return React.createElement(Spinner);
-  if(e1||e2||e3)return React.createElement(Err,{message:e1||e2||e3});
-  const ls=sleep?.[sleep.length-1],la=activity?.[activity.length-1],lr=readiness?.[readiness.length-1];
-  const avg=(arr,key)=>{const v=arr?.filter(x=>x[key]!=null);return v?.length?Math.round(v.reduce((a,b)=>a+b[key],0)/v.length):null};
-  const chartData=sleep?.map(s=>{const a=activity?.find(x=>x.day===s.day),r=readiness?.find(x=>x.day===s.day);
-    return{day:s.day.slice(5),sleep:s.score,activity:a?.score,readiness:r?.score};})||[];
-  const stepsData=activity?.map(a=>({day:a.day.slice(5),steps:a.steps,calories:a.active_calories}))||[];
-
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:24}},
-    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div",null,React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Dashboard Overview"),React.createElement("p",{style:{fontSize:13,color:"var(--text2)",marginTop:4}},"Your health at a glance")),
-      React.createElement(DateSelector,{selected:days,onChange:setDays})),
-    // Score rings
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}},
-      ...[["Sleep",ls?.score,avg(sleep,"score")],["Activity",la?.score,avg(activity,"score")],["Readiness",lr?.score,avg(readiness,"score")]].map(([label,score,avgS])=>
-        React.createElement(Card,{key:label},React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 0"}},
-          React.createElement(ScoreRing,{score,size:140}),
-          React.createElement("p",{style:{fontSize:14,fontWeight:500,marginTop:12}},label+" Score"),
-          React.createElement("p",{style:{fontSize:12,color:"var(--text2)"}},`Avg: `,React.createElement("span",{style:{color:scoreColor(avgS)}},avgS??"\u2014")))))),
-    // Quick stats
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16}},
-      React.createElement(Metric,{label:"Steps Today",value:la?.steps?.toLocaleString(),color:"var(--blue)"}),
-      React.createElement(Metric,{label:"Avg Daily Steps",value:avg(activity,"steps")?.toLocaleString(),color:"var(--cyan)"}),
-      React.createElement(Metric,{label:"Active Calories",value:la?.active_calories,unit:"cal",color:"var(--green)"}),
-      React.createElement(Metric,{label:"Avg Calories",value:avg(activity,"active_calories"),unit:"cal",color:"var(--yellow)"})),
-    // Score trends
-    React.createElement(Card,{title:"Score Trends",subtitle:"Sleep, Activity, and Readiness over time"},
-      React.createElement("div",{style:{height:280}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-        React.createElement(LineChart,{data:chartData},
-          React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-          React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(YAxis,{domain:[0,100],tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-          React.createElement(Line,{type:"monotone",dataKey:"sleep",stroke:"#8b5cf6",strokeWidth:2,dot:false,name:"Sleep"}),
-          React.createElement(Line,{type:"monotone",dataKey:"activity",stroke:"#34d399",strokeWidth:2,dot:false,name:"Activity"}),
-          React.createElement(Line,{type:"monotone",dataKey:"readiness",stroke:"#4f8ff7",strokeWidth:2,dot:false,name:"Readiness"}))))),
-    // Steps & Calories
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}},
-      React.createElement(Card,{title:"Daily Steps"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-        React.createElement(BarChart,{data:stepsData},
-          React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-          React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-          React.createElement(Bar,{dataKey:"steps",fill:"#4f8ff7",radius:[4,4,0,0],name:"Steps"}))))),
-      React.createElement(Card,{title:"Active Calories"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-        React.createElement(AreaChart,{data:stepsData},
-          React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-          React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-          React.createElement(Area,{type:"monotone",dataKey:"calories",stroke:"#34d399",fill:"#34d399",fillOpacity:.1,name:"Calories"}))))))
-  );
-}
-
-function SleepPage(){
-  const[days,setDays]=useState(14);
-  const{data:daily,loading:l1,error:e1}=useOura("daily_sleep",days);
-  const{data:periods,loading:l2,error:e2}=useOura("sleep",days);
-  if(l1||l2)return React.createElement(Spinner,{msg:"Loading sleep data..."});
-  if(e1||e2)return React.createElement(Err,{message:e1||e2});
-  const latest=daily?.[daily.length-1];
-  const lp=periods?.filter(s=>s.type==="long_sleep").slice(-1)[0];
-  const stagesData=periods?.filter(s=>s.type==="long_sleep").map(s=>({day:s.day.slice(5),deep:Math.round(s.deep_sleep_duration/60),rem:Math.round(s.rem_sleep_duration/60),light:Math.round(s.light_sleep_duration/60),awake:Math.round(s.awake_time/60)}))||[];
-  const vitalsData=periods?.filter(s=>s.type==="long_sleep").map(s=>({day:s.day.slice(5),avgHR:s.average_heart_rate,lowestHR:s.lowest_heart_rate,avgHRV:s.average_hrv,tempDelta:s.temperature_delta!=null?+s.temperature_delta.toFixed(2):null}))||[];
-  const scoreData=daily?.map(s=>({day:s.day.slice(5),score:s.score}))||[];
-  const contribs=latest?.contributors||{};
-
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:24}},
-    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div",null,React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Sleep Analysis"),React.createElement("p",{style:{fontSize:13,color:"var(--text2)",marginTop:4}},"Detailed sleep tracking")),
-      React.createElement(DateSelector,{selected:days,onChange:setDays})),
-    // Latest night
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 2fr",gap:16}},
-      React.createElement(Card,null,React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 0"}},
-        React.createElement(ScoreRing,{score:latest?.score,size:160}),
-        React.createElement("p",{style:{fontSize:14,fontWeight:500,marginTop:12}},"Last Night"),
-        React.createElement("p",{style:{fontSize:12,color:"var(--text2)"}},latest?.day||"\u2014"))),
-      React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}},
-        React.createElement(Metric,{label:"Total Sleep",value:lp?fmtDur(lp.total_sleep_duration):"\u2014",color:"var(--purple)"}),
-        React.createElement(Metric,{label:"Deep Sleep",value:lp?fmtDur(lp.deep_sleep_duration):"\u2014",color:"var(--blue)"}),
-        React.createElement(Metric,{label:"REM Sleep",value:lp?fmtDur(lp.rem_sleep_duration):"\u2014",color:"var(--cyan)"}),
-        React.createElement(Metric,{label:"Efficiency",value:lp?.efficiency!=null?lp.efficiency+"%":"\u2014",color:"var(--green)"}),
-        React.createElement(Metric,{label:"Avg HR",value:lp?.average_heart_rate,unit:"bpm",color:"var(--red)"}),
-        React.createElement(Metric,{label:"Avg HRV",value:lp?.average_hrv,unit:"ms",color:"var(--yellow)"}))),
-    // Contributors
-    Object.keys(contribs).length>0&&React.createElement(Card,{title:"Sleep Score Contributors"},
-      React.createElement("div",{style:{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}},
-        Object.entries(contribs).map(([k,v])=>React.createElement("div",{key:k,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:6}},
-          React.createElement(ScoreRing,{score:v,size:56,sw:4}),
-          React.createElement("span",{style:{fontSize:10,color:"var(--text2)",textAlign:"center",textTransform:"capitalize",maxWidth:70}},k.replace(/_/g," ")))))),
-    // Score trend
-    React.createElement(Card,{title:"Sleep Score Trend"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(LineChart,{data:scoreData},
-        React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-        React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-        React.createElement(YAxis,{domain:[0,100],tick:{fill:"#8888a0",fontSize:11}}),
-        React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-        React.createElement(Line,{type:"monotone",dataKey:"score",stroke:"#8b5cf6",strokeWidth:2,dot:{r:3,fill:"#8b5cf6"},name:"Score"}))))),
-    // Sleep stages
-    React.createElement(Card,{title:"Sleep Stages",subtitle:"Minutes per night"},React.createElement("div",{style:{height:260}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:stagesData},
-        React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-        React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-        React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),
-        React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-        React.createElement(Legend,{wrapperStyle:{fontSize:11}}),
-        React.createElement(Bar,{dataKey:"deep",stackId:"a",fill:"#4f8ff7",name:"Deep"}),
-        React.createElement(Bar,{dataKey:"rem",stackId:"a",fill:"#22d3ee",name:"REM"}),
-        React.createElement(Bar,{dataKey:"light",stackId:"a",fill:"#8b5cf6",name:"Light"}),
-        React.createElement(Bar,{dataKey:"awake",stackId:"a",fill:"#f87171",name:"Awake",radius:[4,4,0,0]}))))),
-    // HR & HRV during sleep
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}},
-      React.createElement(Card,{title:"Heart Rate During Sleep"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-        React.createElement(LineChart,{data:vitalsData},
-          React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-          React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-          React.createElement(Line,{type:"monotone",dataKey:"avgHR",stroke:"#f87171",strokeWidth:2,dot:false,name:"Avg HR"}),
-          React.createElement(Line,{type:"monotone",dataKey:"lowestHR",stroke:"#4f8ff7",strokeWidth:2,dot:false,name:"Lowest HR"}))))),
-      React.createElement(Card,{title:"HRV During Sleep"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-        React.createElement(AreaChart,{data:vitalsData},
-          React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-          React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),
-          React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-          React.createElement(Area,{type:"monotone",dataKey:"avgHRV",stroke:"#34d399",fill:"#34d399",fillOpacity:.1,strokeWidth:2,name:"HRV"})))))),
-    // Temp deviation
-    vitalsData.some(d=>d.tempDelta!=null)&&React.createElement(Card,{title:"Temperature Deviation"},React.createElement("div",{style:{height:200}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:vitalsData.filter(d=>d.tempDelta!=null)},
-        React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),
-        React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),
-        React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),
-        React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-        React.createElement(Bar,{dataKey:"tempDelta",fill:"#fbbf24",radius:[4,4,0,0],name:"Temp \u00b0C"})))))
-  );
-}
-
-function ActivityPage(){
-  const[days,setDays]=useState(14);
-  const{data:activity,loading,error}=useOura("daily_activity",days);
-  if(loading)return React.createElement(Spinner,{msg:"Loading activity..."});
-  if(error)return React.createElement(Err,{message:error});
-  const la=activity?.[activity.length-1];
-  const avg=(k)=>activity?.length?Math.round(activity.reduce((a,b)=>a+b[k],0)/activity.length):null;
-  const scoreData=activity?.map(a=>({day:a.day.slice(5),score:a.score}))||[];
-  const stepsData=activity?.map(a=>({day:a.day.slice(5),steps:a.steps}))||[];
-  const calData=activity?.map(a=>({day:a.day.slice(5),active:a.active_calories,total:a.total_calories}))||[];
-  const breakdownData=activity?.map(a=>({day:a.day.slice(5),high:Math.round(a.high_activity_time/60),medium:Math.round(a.medium_activity_time/60),low:Math.round(a.low_activity_time/60),sedentary:Math.round(a.sedentary_time/60)}))||[];
-  const contribs=la?.contributors||{};
-
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:24}},
-    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div",null,React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Activity Tracking"),React.createElement("p",{style:{fontSize:13,color:"var(--text2)",marginTop:4}},"Steps, calories, movement")),
-      React.createElement(DateSelector,{selected:days,onChange:setDays})),
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 2fr",gap:16}},
-      React.createElement(Card,null,React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 0"}},
-        React.createElement(ScoreRing,{score:la?.score,size:140}),
-        React.createElement("p",{style:{fontSize:14,fontWeight:500,marginTop:12}},"Activity Score"))),
-      React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}},
-        React.createElement(Metric,{label:"Steps",value:la?.steps?.toLocaleString(),color:"var(--blue)"}),
-        React.createElement(Metric,{label:"Active Cal",value:la?.active_calories,unit:"cal",color:"var(--green)"}),
-        React.createElement(Metric,{label:"Total Cal",value:la?.total_calories,unit:"cal",color:"var(--yellow)"}),
-        React.createElement(Metric,{label:"Avg Steps",value:avg("steps")?.toLocaleString(),color:"var(--cyan)"}),
-        React.createElement(Metric,{label:"Avg Calories",value:avg("active_calories"),unit:"cal",color:"var(--purple)"}),
-        React.createElement(Metric,{label:"Total Steps",value:activity?.reduce((a,b)=>a+b.steps,0)?.toLocaleString(),color:"var(--blue)"}))),
-    Object.keys(contribs).length>0&&React.createElement(Card,{title:"Activity Contributors"},
-      React.createElement("div",{style:{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}},
-        Object.entries(contribs).map(([k,v])=>React.createElement("div",{key:k,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:6}},
-          React.createElement(ScoreRing,{score:v,size:56,sw:4}),
-          React.createElement("span",{style:{fontSize:10,color:"var(--text2)",textAlign:"center",textTransform:"capitalize",maxWidth:70}},k.replace(/_/g," ")))))),
-    React.createElement(Card,{title:"Activity Score Trend"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(LineChart,{data:scoreData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{domain:[0,100],tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Line,{type:"monotone",dataKey:"score",stroke:"#34d399",strokeWidth:2,dot:{r:3,fill:"#34d399"},name:"Score"}))))),
-    React.createElement(Card,{title:"Daily Steps"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:stepsData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Bar,{dataKey:"steps",fill:"#4f8ff7",radius:[4,4,0,0],name:"Steps"}))))),
-    React.createElement(Card,{title:"Calories Burned"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(AreaChart,{data:calData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Area,{type:"monotone",dataKey:"total",stroke:"#8b5cf6",fill:"#8b5cf6",fillOpacity:.1,name:"Total"}),React.createElement(Area,{type:"monotone",dataKey:"active",stroke:"#34d399",fill:"#34d399",fillOpacity:.15,name:"Active"}))))),
-    React.createElement(Card,{title:"Activity Breakdown",subtitle:"Minutes by intensity"},React.createElement("div",{style:{height:260}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:breakdownData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Legend,{wrapperStyle:{fontSize:11}}),React.createElement(Bar,{dataKey:"high",stackId:"a",fill:"#f87171",name:"High"}),React.createElement(Bar,{dataKey:"medium",stackId:"a",fill:"#fbbf24",name:"Medium"}),React.createElement(Bar,{dataKey:"low",stackId:"a",fill:"#34d399",name:"Low"}),React.createElement(Bar,{dataKey:"sedentary",stackId:"a",fill:"#3a3a5e",name:"Sedentary",radius:[4,4,0,0]})))))
-  );
-}
-
-function ReadinessPage(){
-  const[days,setDays]=useState(14);
-  const{data:readiness,loading:l1,error:e1}=useOura("daily_readiness",days);
-  const{data:resilience,loading:l2,error:e2}=useOura("daily_resilience",days);
-  if(l1||l2)return React.createElement(Spinner,{msg:"Loading readiness..."});
-  if(e1||e2)return React.createElement(Err,{message:e1||e2});
-  const lr=readiness?.[readiness.length-1],lres=resilience?.[resilience.length-1];
-  const avgS=readiness?.length?Math.round(readiness.filter(r=>r.score!=null).reduce((a,b)=>a+(b.score||0),0)/readiness.filter(r=>r.score!=null).length):null;
-  const scoreData=readiness?.map(r=>({day:r.day.slice(5),score:r.score}))||[];
-  const tempData=readiness?.filter(r=>r.temperature_deviation!=null).map(r=>({day:r.day.slice(5),deviation:+r.temperature_deviation.toFixed(2)}))||[];
-  const contribs=lr?.contributors||{};
-
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:24}},
-    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div",null,React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Readiness & Recovery"),React.createElement("p",{style:{fontSize:13,color:"var(--text2)",marginTop:4}},"How ready your body is")),
-      React.createElement(DateSelector,{selected:days,onChange:setDays})),
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"2fr 3fr",gap:16}},
-      React.createElement(Card,null,React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 0"}},
-        React.createElement(ScoreRing,{score:lr?.score,size:160}),
-        React.createElement("p",{style:{fontSize:14,fontWeight:500,marginTop:12}},"Readiness Score"),
-        React.createElement("p",{style:{fontSize:12,color:"var(--text2)"}},lr?.day||"\u2014"))),
-      React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}},
-        React.createElement(Metric,{label:"Average Score",value:avgS,color:"var(--blue)"}),
-        React.createElement(Metric,{label:"Temp Deviation",value:lr?.temperature_deviation!=null?lr.temperature_deviation.toFixed(2)+"\u00b0C":"\u2014",color:"var(--yellow)"}),
-        React.createElement(Metric,{label:"Resilience",value:lres?.level||"\u2014",color:"var(--green)"}),
-        React.createElement(Metric,{label:"Temp Trend",value:lr?.temperature_trend_deviation!=null?lr.temperature_trend_deviation.toFixed(2)+"\u00b0C":"\u2014",color:"var(--cyan)"}))),
-    Object.keys(contribs).length>0&&React.createElement(Card,{title:"Readiness Contributors"},
-      React.createElement("div",{style:{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}},
-        Object.entries(contribs).map(([k,v])=>React.createElement("div",{key:k,style:{display:"flex",flexDirection:"column",alignItems:"center",gap:6}},
-          React.createElement(ScoreRing,{score:v,size:52,sw:4}),
-          React.createElement("span",{style:{fontSize:9,color:"var(--text2)",textAlign:"center",textTransform:"capitalize",maxWidth:60,lineHeight:1.2}},k.replace(/_/g," ")))))),
-    React.createElement(Card,{title:"Readiness Score Trend"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(LineChart,{data:scoreData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{domain:[0,100],tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Line,{type:"monotone",dataKey:"score",stroke:"#4f8ff7",strokeWidth:2,dot:{r:3,fill:"#4f8ff7"},name:"Score"}))))),
-    tempData.length>0&&React.createElement(Card,{title:"Temperature Deviation"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:tempData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Bar,{dataKey:"deviation",fill:"#fbbf24",radius:[4,4,0,0],name:"Deviation \u00b0C"})))))
-  );
-}
-
-function HeartRatePage(){
-  const[days,setDays]=useState(7);
-  const{data:hr,loading:l1,error:e1}=useOura("heartrate",days);
-  const{data:sp,loading:l2,error:e2}=useOura("sleep",days);
-  if(l1||l2)return React.createElement(Spinner,{msg:"Loading heart rate..."});
-  if(e1||e2)return React.createElement(Err,{message:e1||e2});
-  const hrByDay=useMemo(()=>{const g={};hr?.forEach(h=>{const d=h.timestamp.split("T")[0];(g[d]=g[d]||[]).push(h)});return g},[hr]);
-  const daysList=Object.keys(hrByDay).sort();
-  const latestDay=daysList[daysList.length-1];
-  const latestHR=hrByDay[latestDay]||[];
-  const hourlyData=useMemo(()=>{const h={};latestHR.forEach(r=>{const hr=new Date(r.timestamp).getHours();(h[hr]=h[hr]||[]).push(r.bpm)});
-    return Array.from({length:24},(_,i)=>{const r=h[i]||[];return{hour:String(i).padStart(2,"0")+":00",avg:r.length?Math.round(r.reduce((a,b)=>a+b,0)/r.length):null,min:r.length?Math.min(...r):null,max:r.length?Math.max(...r):null}}).filter(d=>d.avg!=null)},[latestHR]);
-  const dailyHR=sp?.filter(s=>s.type==="long_sleep").map(s=>({day:s.day.slice(5),avgHR:s.average_heart_rate,lowestHR:s.lowest_heart_rate,avgHRV:s.average_hrv}))||[];
-  const latestSleep=sp?.filter(s=>s.type==="long_sleep").slice(-1)[0];
-  const curHR=latestHR.length?latestHR[latestHR.length-1].bpm:null;
-  const avgHR=latestHR.length?Math.round(latestHR.reduce((a,b)=>a+b.bpm,0)/latestHR.length):null;
-
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:24}},
-    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div",null,React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Heart Rate & HRV")),
-      React.createElement(DateSelector,{selected:days,onChange:setDays})),
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16}},
-      React.createElement(Metric,{label:"Latest HR",value:curHR,unit:"bpm",color:"var(--red)"}),
-      React.createElement(Metric,{label:"Avg HR Today",value:avgHR,unit:"bpm",color:"var(--blue)"}),
-      React.createElement(Metric,{label:"Resting HR",value:latestSleep?.lowest_heart_rate,unit:"bpm",color:"var(--purple)"}),
-      React.createElement(Metric,{label:"Avg HRV",value:latestSleep?.average_hrv,unit:"ms",color:"var(--cyan)"})),
-    React.createElement(Card,{title:`Heart Rate \u2014 ${latestDay||"Today"}`,subtitle:"Hourly averages"},React.createElement("div",{style:{height:280}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(AreaChart,{data:hourlyData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"hour",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-        React.createElement(Area,{type:"monotone",dataKey:"max",stroke:"transparent",fill:"#f87171",fillOpacity:.1,name:"Max"}),
-        React.createElement(Area,{type:"monotone",dataKey:"avg",stroke:"#f87171",fill:"#f87171",fillOpacity:.2,strokeWidth:2,name:"Avg"}),
-        React.createElement(Area,{type:"monotone",dataKey:"min",stroke:"#4f8ff7",fill:"#4f8ff7",fillOpacity:.1,strokeWidth:1,name:"Min"}))))),
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}},
-      React.createElement(Card,{title:"Resting HR Trend"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-        React.createElement(LineChart,{data:dailyHR},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-          React.createElement(Line,{type:"monotone",dataKey:"avgHR",stroke:"#f87171",strokeWidth:2,dot:{r:3,fill:"#f87171"},name:"Avg HR"}),
-          React.createElement(Line,{type:"monotone",dataKey:"lowestHR",stroke:"#4f8ff7",strokeWidth:2,dot:{r:3,fill:"#4f8ff7"},name:"Lowest HR"}))))),
-      React.createElement(Card,{title:"HRV Trend"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-        React.createElement(AreaChart,{data:dailyHR},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),
-          React.createElement(Area,{type:"monotone",dataKey:"avgHRV",stroke:"#34d399",fill:"#34d399",fillOpacity:.15,strokeWidth:2,name:"HRV"}))))))
-  );
-}
-
-function BodyMetricsPage(){
-  const[days,setDays]=useState(30);
-  const{data:spo2,loading:l1,error:e1}=useOura("daily_spo2",days);
-  const{data:stress,loading:l2,error:e2}=useOura("daily_stress",days);
-  const{data:cardio,loading:l3,error:e3}=useOura("daily_cardiovascular_age",days);
-  const{data:vo2,loading:l4,error:e4}=useOura("vo2_max",days);
-  if(l1||l2||l3||l4)return React.createElement(Spinner,{msg:"Loading body metrics..."});
-  if(e1||e2||e3||e4)return React.createElement(Err,{message:e1||e2||e3||e4});
-  const spo2Data=spo2?.filter(s=>s.spo2_percentage?.average).map(s=>({day:s.day.slice(5),spo2:s.spo2_percentage.average}))||[];
-  const stressData=stress?.map(s=>({day:s.day.slice(5),stress:s.stress_high||0,recovery:s.recovery_high||0}))||[];
-  const cardioData=cardio?.filter(c=>c.vascular_age!=null).map(c=>({day:c.day.slice(5),age:c.vascular_age}))||[];
-  const vo2Data=vo2?.filter(v=>v.vo2_max!=null).map(v=>({day:v.day.slice(5),vo2:v.vo2_max}))||[];
-  const ls=spo2?.slice(-1)[0],lst=stress?.slice(-1)[0],lc=cardio?.slice(-1)[0],lv=vo2?.slice(-1)[0];
-
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:24}},
-    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div",null,React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Body Metrics")),
-      React.createElement(DateSelector,{selected:days,onChange:setDays})),
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16}},
-      React.createElement(Metric,{label:"SpO2",value:ls?.spo2_percentage?.average!=null?ls.spo2_percentage.average+"%":"\u2014",color:"var(--blue)"}),
-      React.createElement(Metric,{label:"Stress Level",value:lst?.day_summary||"\u2014",color:"var(--red)"}),
-      React.createElement(Metric,{label:"Cardio Age",value:lc?.vascular_age??"\u2014",unit:"yrs",color:"var(--purple)"}),
-      React.createElement(Metric,{label:"VO2 Max",value:lv?.vo2_max??"\u2014",unit:"ml/kg/min",color:"var(--green)"})),
-    spo2Data.length>0&&React.createElement(Card,{title:"Blood Oxygen (SpO2)"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(LineChart,{data:spo2Data},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{domain:[90,100],tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Line,{type:"monotone",dataKey:"spo2",stroke:"#4f8ff7",strokeWidth:2,dot:{r:3,fill:"#4f8ff7"},name:"SpO2 %"}))))),
-    stressData.length>0&&React.createElement(Card,{title:"Daily Stress & Recovery"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:stressData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Bar,{dataKey:"stress",fill:"#f87171",name:"Stress",radius:[4,4,0,0]}),React.createElement(Bar,{dataKey:"recovery",fill:"#34d399",name:"Recovery",radius:[4,4,0,0]}))))),
-    cardioData.length>0&&React.createElement(Card,{title:"Cardiovascular Age"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(LineChart,{data:cardioData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Line,{type:"monotone",dataKey:"age",stroke:"#8b5cf6",strokeWidth:2,dot:{r:3,fill:"#8b5cf6"},name:"Cardio Age"}))))),
-    vo2Data.length>0&&React.createElement(Card,{title:"VO2 Max Trend"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(LineChart,{data:vo2Data},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"day",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Line,{type:"monotone",dataKey:"vo2",stroke:"#34d399",strokeWidth:2,dot:{r:3,fill:"#34d399"},name:"VO2 Max"})))))
-  );
-}
-
-function WorkoutsPage(){
-  const[days,setDays]=useState(30);
-  const{data:workouts,loading,error}=useOura("workouts",days);
-  if(loading)return React.createElement(Spinner,{msg:"Loading workouts..."});
-  if(error)return React.createElement(Err,{message:error});
-  const total=workouts?.length||0;
-  const totalCal=workouts?.reduce((a,b)=>a+b.calories,0)||0;
-  const totalDur=workouts?.reduce((a,b)=>a+b.duration,0)||0;
-  const byType={};workouts?.forEach(w=>{const t=w.activity||"other";byType[t]=(byType[t]||0)+1});
-  const typeData=Object.entries(byType).map(([type,count])=>({type,count})).sort((a,b)=>b.count-a.count);
-  const calData=workouts?.map(w=>({label:`${w.day.slice(5)} ${(w.activity||"").slice(0,8)}`,calories:w.calories}))||[];
-
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",gap:24}},
-    React.createElement("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-      React.createElement("div",null,React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Workouts")),
-      React.createElement(DateSelector,{selected:days,onChange:setDays})),
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16}},
-      React.createElement(Metric,{label:"Total Workouts",value:total,color:"var(--blue)"}),
-      React.createElement(Metric,{label:"Total Calories",value:totalCal.toLocaleString(),unit:"cal",color:"var(--green)"}),
-      React.createElement(Metric,{label:"Total Duration",value:fmtDur(totalDur),color:"var(--purple)"}),
-      React.createElement(Metric,{label:"Avg Duration",value:total>0?fmtDur(Math.round(totalDur/total)):"\u2014",color:"var(--yellow)"})),
-    typeData.length>0&&React.createElement(Card,{title:"Workout Types"},React.createElement("div",{style:{height:220}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:typeData,layout:"vertical"},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{type:"number",tick:{fill:"#8888a0",fontSize:11}}),React.createElement(YAxis,{dataKey:"type",type:"category",tick:{fill:"#8888a0",fontSize:11},width:100}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Bar,{dataKey:"count",fill:"#4f8ff7",radius:[0,4,4,0],name:"Count"}))))),
-    calData.length>0&&React.createElement(Card,{title:"Calories Per Workout"},React.createElement("div",{style:{height:260}},React.createElement(ResponsiveContainer,{width:"100%",height:"100%"},
-      React.createElement(BarChart,{data:calData},React.createElement(CartesianGrid,{strokeDasharray:"3 3",stroke:"#2a2a3e"}),React.createElement(XAxis,{dataKey:"label",tick:{fill:"#8888a0",fontSize:9},angle:-45,textAnchor:"end",height:60}),React.createElement(YAxis,{tick:{fill:"#8888a0",fontSize:11}}),React.createElement(Tooltip,{content:React.createElement(CTooltip)}),React.createElement(Bar,{dataKey:"calories",fill:"#34d399",radius:[4,4,0,0],name:"Calories"}))))),
-    React.createElement(Card,{title:"Recent Workouts"},
-      React.createElement("div",{style:{maxHeight:400,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}},
-        workouts?.slice().reverse().map(w=>React.createElement("div",{key:w.id,style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:12,background:"var(--bg2)",borderRadius:8}},
-          React.createElement("div",null,
-            React.createElement("p",{style:{fontSize:14,fontWeight:500,textTransform:"capitalize"}},w.activity||"Workout"),
-            React.createElement("p",{style:{fontSize:12,color:"var(--text2)"}},w.day," \u00b7 ",fmtTime(w.start_datetime))),
-          React.createElement("div",{style:{display:"flex",gap:24,fontSize:13}},
-            React.createElement("div",{style:{textAlign:"right"}},React.createElement("p",{style:{color:"var(--text2)",fontSize:11}},"Duration"),React.createElement("p",{style:{fontWeight:500}},fmtDur(w.duration))),
-            React.createElement("div",{style:{textAlign:"right"}},React.createElement("p",{style:{color:"var(--text2)",fontSize:11}},"Calories"),React.createElement("p",{style:{fontWeight:500,color:"var(--green)"}},w.calories)),
-            React.createElement("div",{style:{textAlign:"right"}},React.createElement("p",{style:{color:"var(--text2)",fontSize:11}},"Intensity"),React.createElement("p",{style:{fontWeight:500,textTransform:"capitalize"}},w.intensity||"\u2014"))))),
-        (!workouts||workouts.length===0)&&React.createElement("p",{style:{textAlign:"center",color:"var(--text2)",padding:"32px 0"}},"No workouts recorded.")))
-  );
-}
-
-function ChatPage(){
-  const{token}=useContext(TokenCtx);
-  const[messages,setMessages]=useState([]);
-  const[input,setInput]=useState("");
-  const[loading,setLoading]=useState(false);
-  const[error,setError]=useState(null);
-  const[ouraData,setOuraData]=useState(null);
-  const[loadingData,setLoadingData]=useState(true);
-  const[apiKey,setApiKey]=useState(()=>localStorage.getItem("anthropic_key")||"");
-  const endRef=useRef(null);
-  const suggestions=["How has my sleep quality been this week?","What trends do you see in my readiness scores?","How many steps am I averaging daily?","Is my HRV improving or declining?","What can I do to improve my sleep?","Compare my deep sleep to REM sleep","Am I getting enough recovery?","Summarize my health data"];
-
-  useEffect(()=>{if(token)fetchAllData(token,30).then(d=>{setOuraData(d);setLoadingData(false)}).catch(()=>setLoadingData(false));else setLoadingData(false)},[token]);
-  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"})},[messages]);
-
-  async function send(content){
-    if(!content.trim()||loading)return;
-    if(!apiKey.trim()){setError("Enter your Anthropic API key below to use chat.");return}
-    setMessages(p=>[...p,{role:"user",content:content.trim()}]);
-    setInput("");setLoading(true);setError(null);
-    try{
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-dangerous-direct-browser-access":"true","anthropic-version":"2023-06-01"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1024,
-          system:`You are an expert health analyst with access to Oura Ring data. Be conversational, reference specific data, give actionable advice. Data:\n${JSON.stringify(ouraData||{})}\nToday: ${new Date().toISOString().split("T")[0]}`,
-          messages:[...messages,{role:"user",content:content.trim()}]})});
-      const data=await r.json();
-      if(!r.ok)throw new Error(data.error?.message||"API error");
-      const text=data.content?.filter(c=>c.type==="text").map(c=>c.text).join("")||"No response";
-      setMessages(p=>[...p,{role:"assistant",content:text}]);
-    }catch(e){setError(e.message)}finally{setLoading(false)}
+  // Find min/max
+  let min=opts.min??Infinity,max=opts.max??-Infinity;
+  if(min===Infinity||max===-Infinity){
+    datasets.forEach(ds=>{ds.data.forEach(v=>{if(v!=null){min=Math.min(min,v);max=Math.max(max,v)}})});
+    const range=max-min||1;min-=range*.1;max+=range*.1;
   }
 
-  return React.createElement("div",{style:{display:"flex",flexDirection:"column",height:"calc(100vh - 48px)"}},
-    React.createElement("div",{style:{marginBottom:16}},
-      React.createElement("h2",{style:{fontSize:24,fontWeight:700}},"Health Chat"),
-      React.createElement("p",{style:{fontSize:13,color:"var(--text2)",marginTop:4}},"Ask questions about your Oura Ring data.",loadingData?" Loading data...":"")),
-    // API key input
-    !localStorage.getItem("anthropic_key")&&React.createElement("div",{style:{marginBottom:16,display:"flex",gap:8}},
-      React.createElement("input",{type:"password",value:apiKey,onChange:e=>setApiKey(e.target.value),placeholder:"Anthropic API Key (for chat)",
-        style:{flex:1,padding:"8px 12px",background:"var(--card)",border:"1px solid var(--border)",borderRadius:8,fontSize:13,color:"var(--text)",outline:"none"}}),
-      React.createElement("button",{onClick:()=>{if(apiKey.trim())localStorage.setItem("anthropic_key",apiKey)},
-        style:{padding:"8px 16px",background:"var(--blue)",color:"#fff",border:"none",borderRadius:8,fontSize:13,cursor:"pointer"}},"Save")),
-    // Messages
-    React.createElement("div",{style:{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:16,paddingBottom:16}},
-      messages.length===0&&React.createElement("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:24}},
-        React.createElement("div",{style:{textAlign:"center"}},
-          React.createElement("div",{style:{fontSize:40,marginBottom:12}},"\u2749"),
-          React.createElement("h3",{style:{fontSize:18,fontWeight:600}},"Ask about your health data"),
-          React.createElement("p",{style:{fontSize:13,color:"var(--text2)",marginTop:4,maxWidth:400}},"I can analyze your sleep, activity, readiness, heart rate, HRV, and more.")),
-        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,maxWidth:500,width:"100%"}},
-          suggestions.map(q=>React.createElement("button",{key:q,onClick:()=>send(q),
-            style:{textAlign:"left",fontSize:12,padding:12,background:"var(--card)",border:"1px solid var(--border)",borderRadius:8,color:"var(--text2)",cursor:"pointer"}},q)))),
-      messages.map((m,i)=>React.createElement("div",{key:i,style:{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}},
-        React.createElement("div",{className:m.role==="user"?"chat-user":"chat-ai",
-          style:{maxWidth:600,padding:"12px 16px",borderRadius:16,fontSize:14,lineHeight:1.6,whiteSpace:"pre-wrap",color:m.role==="user"?"#fff":"var(--text)"}},m.content))),
-      loading&&React.createElement("div",{style:{display:"flex"}},
-        React.createElement("div",{className:"chat-ai",style:{padding:"12px 16px",borderRadius:16,display:"flex",gap:4}},
-          [0,150,300].map(d=>React.createElement("div",{key:d,className:"animate-bounce",style:{width:8,height:8,background:"var(--text2)",borderRadius:4,animationDelay:d+"ms"}})))),
-      error&&React.createElement("div",{style:{textAlign:"center"}},
-        React.createElement("div",{style:{display:"inline-block",padding:"8px 16px",background:"rgba(248,113,113,.1)",border:"1px solid rgba(248,113,113,.3)",borderRadius:8,fontSize:13,color:"var(--red)"}},error)),
-      React.createElement("div",{ref:endRef})),
-    // Input
-    React.createElement("form",{onSubmit:e=>{e.preventDefault();send(input)},style:{display:"flex",gap:12,paddingTop:16,borderTop:"1px solid var(--border)"}},
-      React.createElement("input",{type:"text",value:input,onChange:e=>setInput(e.target.value),placeholder:"Ask about your health data...",disabled:loading,
-        style:{flex:1,padding:"12px 16px",background:"var(--card)",border:"1px solid var(--border)",borderRadius:12,fontSize:14,color:"var(--text)",outline:"none",opacity:loading?.5:1}}),
-      React.createElement("button",{type:"submit",disabled:loading||!input.trim(),
-        style:{padding:"12px 24px",background:"linear-gradient(135deg,var(--blue),var(--purple))",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:500,cursor:"pointer",opacity:loading||!input.trim()?.5:1}},"Send"))
-  );
+  // Grid
+  ctx.strokeStyle="#2a2a3e";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ch*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle="#8888a0";ctx.font="10px system-ui";ctx.textAlign="right";
+    ctx.fillText(Math.round(min+(max-min)*i/4),pad.l-6,y+4);
+  }
+
+  // X labels
+  ctx.textAlign="center";ctx.fillStyle="#8888a0";
+  const step=Math.max(1,Math.floor(labels.length/8));
+  labels.forEach((l,i)=>{if(i%step===0)ctx.fillText(l,pad.l+cw*i/(labels.length-1||1),H-8)});
+
+  // Lines
+  datasets.forEach(ds=>{
+    ctx.strokeStyle=ds.color;ctx.lineWidth=2;ctx.beginPath();
+    let started=false;
+    ds.data.forEach((v,i)=>{
+      if(v==null)return;
+      const x=pad.l+cw*i/(labels.length-1||1);
+      const y=pad.t+ch*(1-(v-min)/(max-min||1));
+      if(!started){ctx.moveTo(x,y);started=true}else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // Area fill
+    if(ds.fill){
+      ctx.globalAlpha=.1;ctx.fillStyle=ds.color;
+      ctx.lineTo(pad.l+cw*(ds.data.length-1)/(labels.length-1||1),pad.t+ch);
+      ctx.lineTo(pad.l,pad.t+ch);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+    }
+  });
 }
 
-// ── Navigation ──
-const NAV=[
+function drawBarChart(canvas,datasets,labels,opts={}){
+  const ctx=canvas.getContext("2d");
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.clientWidth,H=opts.height||220;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  canvas.style.height=H+"px";
+  ctx.scale(dpr,dpr);
+  const pad={t:20,r:20,b:30,l:50};
+  const cw=W-pad.l-pad.r,ch=H-pad.t-pad.b;
+  const stacked=opts.stacked;
+
+  let max=0;
+  if(stacked){
+    labels.forEach((_,i)=>{let sum=0;datasets.forEach(ds=>{sum+=(ds.data[i]||0)});max=Math.max(max,sum)});
+  }else{
+    datasets.forEach(ds=>{ds.data.forEach(v=>{max=Math.max(max,v||0)})});
+  }
+  max=max*1.1||1;
+
+  ctx.strokeStyle="#2a2a3e";ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+ch*(1-i/4);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle="#8888a0";ctx.font="10px system-ui";ctx.textAlign="right";
+    ctx.fillText(Math.round(max*i/4),pad.l-6,y+4);
+  }
+
+  const bw=Math.min(cw/labels.length*.6,30);
+  const gw=datasets.length>1&&!stacked?bw/datasets.length:bw;
+
+  ctx.textAlign="center";ctx.fillStyle="#8888a0";
+  const step=Math.max(1,Math.floor(labels.length/10));
+  labels.forEach((l,i)=>{
+    const cx=pad.l+cw*(i+.5)/labels.length;
+    if(i%step===0)ctx.fillText(l,cx,H-8);
+
+    if(stacked){
+      let cumY=0;
+      datasets.forEach(ds=>{
+        const v=ds.data[i]||0;
+        const bh=ch*v/max;
+        ctx.fillStyle=ds.color;
+        ctx.beginPath();
+        const x=cx-bw/2,y=pad.t+ch-cumY-bh;
+        ctx.roundRect?ctx.roundRect(x,y,bw,bh,cumY===0?[4,4,0,0]:[0,0,0,0]):ctx.rect(x,y,bw,bh);
+        ctx.fill();
+        cumY+=bh;
+      });
+    }else{
+      datasets.forEach((ds,di)=>{
+        const v=ds.data[i]||0;
+        const bh=ch*v/max;
+        ctx.fillStyle=ds.color;
+        const x=cx-bw/2+(gw*di);
+        const y=pad.t+ch-bh;
+        ctx.beginPath();
+        ctx.roundRect?ctx.roundRect(x,y,gw*.9,bh,[4,4,0,0]):ctx.rect(x,y,gw*.9,bh);
+        ctx.fill();
+      });
+    }
+  });
+}
+
+// ── Score Ring SVG ──
+function createRing(score,size=120,sw=8){
+  const r=(size-sw)/2,c=2*Math.PI*r,p=score!=null?(score/100)*c:0;
+  const wrap=h("div");wrap.className="ring-wrap";wrap.style.width=wrap.style.height=size+"px";
+  wrap.innerHTML=`<svg width="${size}" height="${size}" class="score-ring">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#2a2a3e" stroke-width="${sw}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${scoreClr(score)}" stroke-width="${sw}" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c-p}" style="transition:stroke-dashoffset 1s"/>
+  </svg><div class="ring-text" style="font-size:${size>80?24:14}px">${score??"\u2014"}</div>`;
+  return wrap;
+}
+
+// ── UI Builders ──
+function card(title,subtitle){const c=h("div");c.className="card";
+  if(title){const t=h("div");t.className="card-title";t.textContent=title;c.appendChild(t)}
+  if(subtitle){const s=h("div");s.className="card-sub";s.textContent=subtitle;c.appendChild(s)}
+  return c;
+}
+function metric(label,value,unit,color){
+  const c=card();
+  const l=h("div");l.className="metric-label";l.textContent=label;c.appendChild(l);
+  const v=h("span");v.className="metric-val";v.style.color=color||"var(--t1)";v.textContent=value??"\u2014";c.appendChild(v);
+  if(unit){const u=h("span");u.className="metric-unit";u.textContent=unit;c.appendChild(u)}
+  return c;
+}
+function dateSel(current,onChange){
+  const d=h("div");d.className="date-sel";
+  [7,14,30,90].forEach(n=>{const b=h("button");b.textContent=n+"D";if(n===current)b.className="active";
+    b.onclick=()=>onChange(n);d.appendChild(b)});
+  return d;
+}
+function spinner(msg="Loading data..."){const d=h("div");d.className="spinner";d.innerHTML=`<div class="dot"></div><p>${msg}</p>`;return d}
+function errorBox(msg){const d=h("div");d.className="error-box";d.textContent=msg;return d}
+function chartCard(title,subtitle,height,drawFn){
+  const c=card(title,subtitle);
+  const wrap=h("div");wrap.className="chart-container";
+  const cv=h("canvas");cv.style.height=height+"px";wrap.appendChild(cv);c.appendChild(wrap);
+  requestAnimationFrame(()=>{if(cv.clientWidth>0)drawFn(cv)});
+  new ResizeObserver(()=>{if(cv.clientWidth>0)drawFn(cv)}).observe(wrap);
+  return c;
+}
+function contribs(obj){
+  const c=card("Score Contributors");const w=h("div");w.className="contribs";
+  Object.entries(obj).forEach(([k,v])=>{
+    const d=h("div");d.className="contrib";d.appendChild(createRing(v,52,4));
+    const s=h("span");s.textContent=k.replace(/_/g," ");d.appendChild(s);w.appendChild(d);
+  });c.appendChild(w);return c;
+}
+function grid(cols,...children){const g=h("div");g.className=`grid g${cols}`;children.forEach(c=>{if(c)g.appendChild(c)});return g}
+function pageHeader(title,sub,days,onDays){
+  const ph=h("div");ph.className="page-header";
+  const left=h("div");const t=h("h2");t.textContent=title;left.appendChild(t);
+  if(sub){const p=h("p");p.textContent=sub;left.appendChild(p)}
+  ph.appendChild(left);if(days!=null)ph.appendChild(dateSel(days,onDays));return ph;
+}
+
+// ── State ──
+let TOKEN=localStorage.getItem("oura_token");
+let ANTHROPIC_KEY=localStorage.getItem("anthropic_key")||"";
+let currentPage="overview";
+const cache={};
+
+async function loadData(type,days){
+  const key=`${type}_${days}`;
+  if(cache[key])return cache[key];
+  const d=await fetchType(TOKEN,type,days);
+  cache[key]=d;return d;
+}
+function clearCache(){Object.keys(cache).forEach(k=>delete cache[k])}
+
+// ── Pages ──
+async function renderOverview(container,days=14){
+  container.innerHTML="";container.appendChild(spinner());
+  try{
+    const[sleep,activity,readiness]=await Promise.all([loadData("daily_sleep",days),loadData("daily_activity",days),loadData("daily_readiness",days)]);
+    container.innerHTML="";
+    container.appendChild(pageHeader("Dashboard Overview","Your health at a glance",days,d=>renderOverview(container,d)));
+    const ls=sleep[sleep.length-1],la=activity[activity.length-1],lr=readiness[readiness.length-1];
+
+    // Score rings
+    const rings=grid(3);
+    [["Sleep",ls?.score,avg(sleep,"score")],["Activity",la?.score,avg(activity,"score")],["Readiness",lr?.score,avg(readiness,"score")]].forEach(([label,score,avgS])=>{
+      const c=card();c.style.display="flex";c.style.flexDirection="column";c.style.alignItems="center";c.style.padding="24px 0";
+      c.appendChild(createRing(score,140));
+      const p=h("p");p.style.cssText="font-size:14px;font-weight:500;margin-top:12px";p.textContent=label+" Score";c.appendChild(p);
+      const a=h("p");a.style.cssText="font-size:12px;color:var(--t2)";a.innerHTML=`Avg: <span style="color:${scoreClr(avgS)}">${avgS??"\u2014"}</span>`;c.appendChild(a);
+      rings.appendChild(c);
+    });
+    container.appendChild(rings);
+
+    // Quick stats
+    container.appendChild(grid(4,
+      metric("Steps Today",la?.steps?.toLocaleString(),null,"var(--blue)"),
+      metric("Avg Daily Steps",avg(activity,"steps")?.toLocaleString(),null,"var(--cyan)"),
+      metric("Active Calories",la?.active_calories,"cal","var(--green)"),
+      metric("Avg Calories",avg(activity,"active_calories"),"cal","var(--yellow)")
+    ));
+
+    // Score trends
+    const labels=sleep.map(s=>s.day.slice(5));
+    container.appendChild(chartCard("Score Trends","Sleep, Activity, Readiness over time",280,cv=>{
+      drawLineChart(cv,[
+        {data:sleep.map(s=>s.score),color:"#8b5cf6",name:"Sleep"},
+        {data:sleep.map(s=>{const a=activity.find(x=>x.day===s.day);return a?.score}),color:"#34d399",name:"Activity"},
+        {data:sleep.map(s=>{const r=readiness.find(x=>x.day===s.day);return r?.score}),color:"#4f8ff7",name:"Readiness"}
+      ],labels,{min:0,max:100,height:280});
+    }));
+
+    // Steps & calories
+    const al=activity.map(a=>a.day.slice(5));
+    container.appendChild(grid(2,
+      chartCard("Daily Steps",null,220,cv=>{drawBarChart(cv,[{data:activity.map(a=>a.steps),color:"#4f8ff7"}],al)}),
+      chartCard("Active Calories",null,220,cv=>{drawLineChart(cv,[{data:activity.map(a=>a.active_calories),color:"#34d399",fill:true}],al)})
+    ));
+  }catch(e){container.innerHTML="";container.appendChild(errorBox(e.message))}
+}
+
+async function renderSleep(container,days=14){
+  container.innerHTML="";container.appendChild(spinner("Loading sleep..."));
+  try{
+    const[daily,periods]=await Promise.all([loadData("daily_sleep",days),loadData("sleep",days)]);
+    container.innerHTML="";
+    container.appendChild(pageHeader("Sleep Analysis","Detailed sleep tracking",days,d=>renderSleep(container,d)));
+    const latest=daily[daily.length-1];
+    const lp=periods.filter(s=>s.type==="long_sleep").slice(-1)[0];
+    const longSleep=periods.filter(s=>s.type==="long_sleep");
+
+    // Top row
+    const top=grid(2);
+    const rc=card();rc.style.cssText="display:flex;flex-direction:column;align-items:center;padding:24px 0";
+    rc.appendChild(createRing(latest?.score,160));
+    const p1=h("p");p1.style.cssText="font-size:14px;font-weight:500;margin-top:12px";p1.textContent="Last Night";rc.appendChild(p1);
+    const p2=h("p");p2.style.cssText="font-size:12px;color:var(--t2)";p2.textContent=latest?.day||"\u2014";rc.appendChild(p2);
+    top.appendChild(rc);
+    const stats=grid(3,
+      metric("Total Sleep",lp?fmtDur(lp.total_sleep_duration):"\u2014",null,"var(--purple)"),
+      metric("Deep Sleep",lp?fmtDur(lp.deep_sleep_duration):"\u2014",null,"var(--blue)"),
+      metric("REM Sleep",lp?fmtDur(lp.rem_sleep_duration):"\u2014",null,"var(--cyan)"),
+      metric("Efficiency",lp?.efficiency!=null?lp.efficiency+"%":"\u2014",null,"var(--green)"),
+      metric("Avg HR",lp?.average_heart_rate,"bpm","var(--red)"),
+      metric("Avg HRV",lp?.average_hrv,"ms","var(--yellow)")
+    );top.appendChild(stats);container.appendChild(top);
+
+    if(latest?.contributors&&Object.keys(latest.contributors).length)container.appendChild(contribs(latest.contributors));
+
+    // Score trend
+    const sl=daily.map(s=>s.day.slice(5));
+    container.appendChild(chartCard("Sleep Score Trend",null,220,cv=>{drawLineChart(cv,[{data:daily.map(s=>s.score),color:"#8b5cf6"}],sl,{min:0,max:100})}));
+
+    // Sleep stages
+    const stl=longSleep.map(s=>s.day.slice(5));
+    container.appendChild(chartCard("Sleep Stages","Minutes per night",260,cv=>{
+      drawBarChart(cv,[
+        {data:longSleep.map(s=>Math.round(s.deep_sleep_duration/60)),color:"#4f8ff7",name:"Deep"},
+        {data:longSleep.map(s=>Math.round(s.rem_sleep_duration/60)),color:"#22d3ee",name:"REM"},
+        {data:longSleep.map(s=>Math.round(s.light_sleep_duration/60)),color:"#8b5cf6",name:"Light"},
+        {data:longSleep.map(s=>Math.round(s.awake_time/60)),color:"#f87171",name:"Awake"}
+      ],stl,{stacked:true,height:260});
+    }));
+
+    // HR & HRV
+    container.appendChild(grid(2,
+      chartCard("Heart Rate During Sleep",null,220,cv=>{drawLineChart(cv,[
+        {data:longSleep.map(s=>s.average_heart_rate),color:"#f87171"},
+        {data:longSleep.map(s=>s.lowest_heart_rate),color:"#4f8ff7"}],stl)}),
+      chartCard("HRV During Sleep",null,220,cv=>{drawLineChart(cv,[{data:longSleep.map(s=>s.average_hrv),color:"#34d399",fill:true}],stl)})
+    ));
+
+    // Temp
+    const td=longSleep.filter(s=>s.temperature_delta!=null);
+    if(td.length)container.appendChild(chartCard("Temperature Deviation",null,200,cv=>{
+      drawBarChart(cv,[{data:td.map(s=>+s.temperature_delta.toFixed(2)),color:"#fbbf24"}],td.map(s=>s.day.slice(5)),{height:200});
+    }));
+  }catch(e){container.innerHTML="";container.appendChild(errorBox(e.message))}
+}
+
+async function renderActivity(container,days=14){
+  container.innerHTML="";container.appendChild(spinner("Loading activity..."));
+  try{
+    const activity=await loadData("daily_activity",days);
+    container.innerHTML="";
+    container.appendChild(pageHeader("Activity Tracking","Steps, calories, movement",days,d=>renderActivity(container,d)));
+    const la=activity[activity.length-1];
+
+    const top=grid(2);
+    const rc=card();rc.style.cssText="display:flex;flex-direction:column;align-items:center;padding:24px 0";
+    rc.appendChild(createRing(la?.score,140));
+    const p1=h("p");p1.style.cssText="font-size:14px;font-weight:500;margin-top:12px";p1.textContent="Activity Score";rc.appendChild(p1);
+    top.appendChild(rc);
+    top.appendChild(grid(3,
+      metric("Steps",la?.steps?.toLocaleString(),null,"var(--blue)"),
+      metric("Active Cal",la?.active_calories,"cal","var(--green)"),
+      metric("Total Cal",la?.total_calories,"cal","var(--yellow)"),
+      metric("Avg Steps",avg(activity,"steps")?.toLocaleString(),null,"var(--cyan)"),
+      metric("Avg Calories",avg(activity,"active_calories"),"cal","var(--purple)"),
+      metric("Total Steps",activity.reduce((a,b)=>a+b.steps,0).toLocaleString(),null,"var(--blue)")
+    ));container.appendChild(top);
+
+    if(la?.contributors&&Object.keys(la.contributors).length)container.appendChild(contribs(la.contributors));
+
+    const al=activity.map(a=>a.day.slice(5));
+    container.appendChild(chartCard("Activity Score Trend",null,220,cv=>{drawLineChart(cv,[{data:activity.map(a=>a.score),color:"#34d399"}],al,{min:0,max:100})}));
+    container.appendChild(chartCard("Daily Steps",null,220,cv=>{drawBarChart(cv,[{data:activity.map(a=>a.steps),color:"#4f8ff7"}],al)}));
+    container.appendChild(chartCard("Calories",null,220,cv=>{drawLineChart(cv,[{data:activity.map(a=>a.total_calories),color:"#8b5cf6"},{data:activity.map(a=>a.active_calories),color:"#34d399",fill:true}],al)}));
+    container.appendChild(chartCard("Activity Breakdown","Minutes by intensity",260,cv=>{
+      drawBarChart(cv,[
+        {data:activity.map(a=>Math.round(a.high_activity_time/60)),color:"#f87171"},
+        {data:activity.map(a=>Math.round(a.medium_activity_time/60)),color:"#fbbf24"},
+        {data:activity.map(a=>Math.round(a.low_activity_time/60)),color:"#34d399"},
+        {data:activity.map(a=>Math.round(a.sedentary_time/60)),color:"#3a3a5e"}
+      ],al,{stacked:true,height:260});
+    }));
+  }catch(e){container.innerHTML="";container.appendChild(errorBox(e.message))}
+}
+
+async function renderReadiness(container,days=14){
+  container.innerHTML="";container.appendChild(spinner("Loading readiness..."));
+  try{
+    const[readiness,resilience]=await Promise.all([loadData("daily_readiness",days),loadData("daily_resilience",days)]);
+    container.innerHTML="";
+    container.appendChild(pageHeader("Readiness & Recovery","How ready your body is",days,d=>renderReadiness(container,d)));
+    const lr=readiness[readiness.length-1],lres=resilience[resilience.length-1];
+    const avgS=avg(readiness.filter(r=>r.score!=null),"score");
+
+    const top=grid(2);
+    const rc=card();rc.style.cssText="display:flex;flex-direction:column;align-items:center;padding:24px 0";
+    rc.appendChild(createRing(lr?.score,160));
+    const p1=h("p");p1.style.cssText="font-size:14px;font-weight:500;margin-top:12px";p1.textContent="Readiness Score";rc.appendChild(p1);
+    top.appendChild(rc);
+    top.appendChild(grid(2,
+      metric("Average Score",avgS,null,"var(--blue)"),
+      metric("Temp Deviation",lr?.temperature_deviation!=null?lr.temperature_deviation.toFixed(2)+"\u00b0C":"\u2014",null,"var(--yellow)"),
+      metric("Resilience",lres?.level||"\u2014",null,"var(--green)"),
+      metric("Temp Trend",lr?.temperature_trend_deviation!=null?lr.temperature_trend_deviation.toFixed(2)+"\u00b0C":"\u2014",null,"var(--cyan)")
+    ));container.appendChild(top);
+
+    if(lr?.contributors&&Object.keys(lr.contributors).length)container.appendChild(contribs(lr.contributors));
+
+    const rl=readiness.map(r=>r.day.slice(5));
+    container.appendChild(chartCard("Readiness Score Trend",null,220,cv=>{drawLineChart(cv,[{data:readiness.map(r=>r.score),color:"#4f8ff7"}],rl,{min:0,max:100})}));
+    const td=readiness.filter(r=>r.temperature_deviation!=null);
+    if(td.length)container.appendChild(chartCard("Temperature Deviation",null,220,cv=>{drawBarChart(cv,[{data:td.map(r=>+r.temperature_deviation.toFixed(2)),color:"#fbbf24"}],td.map(r=>r.day.slice(5)))}));
+  }catch(e){container.innerHTML="";container.appendChild(errorBox(e.message))}
+}
+
+async function renderHeartRate(container,days=7){
+  container.innerHTML="";container.appendChild(spinner("Loading heart rate..."));
+  try{
+    const[hr,sp]=await Promise.all([loadData("heartrate",days),loadData("sleep",days)]);
+    container.innerHTML="";
+    container.appendChild(pageHeader("Heart Rate & HRV","Cardiovascular monitoring",days,d=>renderHeartRate(container,d)));
+
+    const byDay={};hr.forEach(h=>{const d=h.timestamp.split("T")[0];(byDay[d]=byDay[d]||[]).push(h)});
+    const daysList=Object.keys(byDay).sort();
+    const latestDay=daysList[daysList.length-1];
+    const latestHR=byDay[latestDay]||[];
+    const longSleep=sp.filter(s=>s.type==="long_sleep");
+    const ls=longSleep.slice(-1)[0];
+
+    const curHR=latestHR.length?latestHR[latestHR.length-1].bpm:null;
+    const avgHR=latestHR.length?Math.round(latestHR.reduce((a,b)=>a+b.bpm,0)/latestHR.length):null;
+
+    container.appendChild(grid(4,
+      metric("Latest HR",curHR,"bpm","var(--red)"),
+      metric("Avg HR Today",avgHR,"bpm","var(--blue)"),
+      metric("Resting HR",ls?.lowest_heart_rate,"bpm","var(--purple)"),
+      metric("Avg HRV",ls?.average_hrv,"ms","var(--cyan)")
+    ));
+
+    // Hourly
+    const hourly={};latestHR.forEach(r=>{const hr=new Date(r.timestamp).getHours();(hourly[hr]=hourly[hr]||[]).push(r.bpm)});
+    const hdata=[];const hlabels=[];
+    for(let i=0;i<24;i++){const r=hourly[i];if(r){hdata.push(Math.round(r.reduce((a,b)=>a+b,0)/r.length));hlabels.push(String(i).padStart(2,"0")+":00")}}
+    if(hdata.length)container.appendChild(chartCard(`Heart Rate \u2014 ${latestDay||"Today"}`,"Hourly averages",280,cv=>{drawLineChart(cv,[{data:hdata,color:"#f87171",fill:true}],hlabels,{height:280})}));
+
+    // Trends
+    const sl=longSleep.map(s=>s.day.slice(5));
+    container.appendChild(grid(2,
+      chartCard("Resting HR Trend",null,220,cv=>{drawLineChart(cv,[{data:longSleep.map(s=>s.average_heart_rate),color:"#f87171"},{data:longSleep.map(s=>s.lowest_heart_rate),color:"#4f8ff7"}],sl)}),
+      chartCard("HRV Trend",null,220,cv=>{drawLineChart(cv,[{data:longSleep.map(s=>s.average_hrv),color:"#34d399",fill:true}],sl)})
+    ));
+  }catch(e){container.innerHTML="";container.appendChild(errorBox(e.message))}
+}
+
+async function renderBody(container,days=30){
+  container.innerHTML="";container.appendChild(spinner("Loading body metrics..."));
+  try{
+    const[spo2,stress,cardio,vo2]=await Promise.all([loadData("daily_spo2",days),loadData("daily_stress",days),loadData("daily_cardiovascular_age",days),loadData("vo2_max",days)]);
+    container.innerHTML="";
+    container.appendChild(pageHeader("Body Metrics","SpO2, stress, cardio age, VO2 max",days,d=>renderBody(container,d)));
+    const ls=spo2.slice(-1)[0],lst=stress.slice(-1)[0],lc=cardio.slice(-1)[0],lv=vo2.slice(-1)[0];
+    container.appendChild(grid(4,
+      metric("SpO2",ls?.spo2_percentage?.average!=null?ls.spo2_percentage.average+"%":"\u2014",null,"var(--blue)"),
+      metric("Stress",lst?.day_summary||"\u2014",null,"var(--red)"),
+      metric("Cardio Age",lc?.vascular_age??"\u2014","yrs","var(--purple)"),
+      metric("VO2 Max",lv?.vo2_max??"\u2014","ml/kg/min","var(--green)")
+    ));
+    const sd=spo2.filter(s=>s.spo2_percentage?.average);
+    if(sd.length)container.appendChild(chartCard("Blood Oxygen (SpO2)",null,220,cv=>{drawLineChart(cv,[{data:sd.map(s=>s.spo2_percentage.average),color:"#4f8ff7"}],sd.map(s=>s.day.slice(5)),{min:90,max:100})}));
+    if(stress.length)container.appendChild(chartCard("Daily Stress & Recovery",null,220,cv=>{drawBarChart(cv,[{data:stress.map(s=>s.stress_high||0),color:"#f87171"},{data:stress.map(s=>s.recovery_high||0),color:"#34d399"}],stress.map(s=>s.day.slice(5)))}));
+    const cd=cardio.filter(c=>c.vascular_age!=null);
+    if(cd.length)container.appendChild(chartCard("Cardiovascular Age",null,220,cv=>{drawLineChart(cv,[{data:cd.map(c=>c.vascular_age),color:"#8b5cf6"}],cd.map(c=>c.day.slice(5)))}));
+    const vd=vo2.filter(v=>v.vo2_max!=null);
+    if(vd.length)container.appendChild(chartCard("VO2 Max Trend",null,220,cv=>{drawLineChart(cv,[{data:vd.map(v=>v.vo2_max),color:"#34d399"}],vd.map(v=>v.day.slice(5)))}));
+  }catch(e){container.innerHTML="";container.appendChild(errorBox(e.message))}
+}
+
+async function renderWorkouts(container,days=30){
+  container.innerHTML="";container.appendChild(spinner("Loading workouts..."));
+  try{
+    const workouts=await loadData("workouts",days);
+    container.innerHTML="";
+    container.appendChild(pageHeader("Workouts","Exercise history",days,d=>renderWorkouts(container,d)));
+    const totalCal=workouts.reduce((a,b)=>a+b.calories,0);
+    const totalDur=workouts.reduce((a,b)=>a+b.duration,0);
+    container.appendChild(grid(4,
+      metric("Total Workouts",workouts.length,null,"var(--blue)"),
+      metric("Total Calories",totalCal.toLocaleString(),"cal","var(--green)"),
+      metric("Total Duration",fmtDur(totalDur),null,"var(--purple)"),
+      metric("Avg Duration",workouts.length?fmtDur(Math.round(totalDur/workouts.length)):"\u2014",null,"var(--yellow)")
+    ));
+
+    const byType={};workouts.forEach(w=>{const t=w.activity||"other";byType[t]=(byType[t]||0)+1});
+    const types=Object.entries(byType).sort((a,b)=>b[1]-a[1]);
+    if(types.length)container.appendChild(chartCard("Workout Types",null,220,cv=>{drawBarChart(cv,[{data:types.map(t=>t[1]),color:"#4f8ff7"}],types.map(t=>t[0]))}));
+    if(workouts.length)container.appendChild(chartCard("Calories Per Workout",null,260,cv=>{drawBarChart(cv,[{data:workouts.map(w=>w.calories),color:"#34d399"}],workouts.map(w=>w.day.slice(5)),{height:260})}));
+
+    // List
+    const list=card("Recent Workouts");
+    const wrap=h("div");wrap.style.cssText="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px";
+    workouts.slice().reverse().forEach(w=>{
+      const item=h("div");item.className="workout-item";
+      item.innerHTML=`<div><p class="name">${w.activity||"Workout"}</p><p class="date">${w.day} \u00b7 ${fmtTime(w.start_datetime)}</p></div>
+        <div class="workout-stats"><div><p class="stat-label">Duration</p><p class="stat-val">${fmtDur(w.duration)}</p></div>
+        <div><p class="stat-label">Calories</p><p class="stat-val" style="color:var(--green)">${w.calories}</p></div>
+        <div><p class="stat-label">Intensity</p><p class="stat-val" style="text-transform:capitalize">${w.intensity||"\u2014"}</p></div></div>`;
+      wrap.appendChild(item);
+    });
+    if(!workouts.length){const p=h("p");p.style.cssText="text-align:center;color:var(--t2);padding:32px 0";p.textContent="No workouts recorded.";wrap.appendChild(p)}
+    list.appendChild(wrap);container.appendChild(list);
+  }catch(e){container.innerHTML="";container.appendChild(errorBox(e.message))}
+}
+
+function renderChat(container){
+  container.innerHTML="";
+  const page=h("div");page.id="chat-page";
+  const header=h("div");header.style.marginBottom="16px";
+  header.innerHTML=`<h2 style="font-size:24px;font-weight:700">Health Chat</h2><p style="font-size:13px;color:var(--t2);margin-top:4px">Ask questions about your Oura data. Powered by Claude AI.</p>`;
+  page.appendChild(header);
+
+  // API key
+  if(!ANTHROPIC_KEY){
+    const row=h("div");row.className="api-key-row";
+    const inp=h("input");inp.type="password";inp.placeholder="Anthropic API Key (required for chat)";
+    const btn=h("button");btn.textContent="Save";
+    btn.onclick=()=>{if(inp.value.trim()){ANTHROPIC_KEY=inp.value.trim();localStorage.setItem("anthropic_key",ANTHROPIC_KEY);row.remove()}};
+    row.appendChild(inp);row.appendChild(btn);page.appendChild(row);
+  }
+
+  const msgs=h("div");msgs.id="chat-messages";
+  const messages=[];
+  let ouraData=null;
+
+  // Load data
+  fetchAll(TOKEN).then(d=>{ouraData=d}).catch(()=>{});
+
+  const suggestions=["How has my sleep quality been this week?","What trends do you see in my readiness scores?","How many steps am I averaging daily?","Is my HRV improving or declining?","What can I do to improve my sleep?","Compare my deep sleep to REM sleep","Am I getting enough recovery?","Summarize my health data"];
+
+  function renderEmpty(){
+    msgs.innerHTML="";
+    const empty=h("div");empty.className="chat-empty";
+    empty.innerHTML=`<div><div class="icon">\u2749</div><h3>Ask about your health data</h3><p>I can analyze your sleep, activity, readiness, heart rate, HRV, and more.</p></div>`;
+    const sg=h("div");sg.className="chat-suggestions";
+    suggestions.forEach(q=>{const b=h("button");b.textContent=q;b.onclick=()=>send(q);sg.appendChild(b)});
+    empty.appendChild(sg);msgs.appendChild(empty);
+  }
+
+  function addMsg(role,text){
+    messages.push({role,content:text});
+    const d=h("div");d.className="msg "+(role==="user"?"user":"ai");
+    const b=h("div");b.className="bubble";b.textContent=text;d.appendChild(b);
+    msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+  }
+
+  async function send(content){
+    if(!content.trim())return;
+    if(!ANTHROPIC_KEY){alert("Please enter your Anthropic API key first.");return}
+    if(messages.length===0)msgs.innerHTML="";
+    addMsg("user",content);
+    formInput.value="";
+
+    // Typing indicator
+    const typing=h("div");typing.className="msg ai";
+    typing.innerHTML=`<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+    msgs.appendChild(typing);msgs.scrollTop=msgs.scrollHeight;
+    formBtn.disabled=true;
+
+    try{
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":ANTHROPIC_KEY,"anthropic-dangerous-direct-browser-access":"true","anthropic-version":"2023-06-01"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1024,
+          system:`You are an expert health analyst with access to Oura Ring data. Be conversational, reference specific data points, give actionable advice.\n\nDATA:\n${JSON.stringify(ouraData||{})}\n\nToday: ${new Date().toISOString().split("T")[0]}`,
+          messages:messages.map(m=>({role:m.role,content:m.content}))})});
+      typing.remove();
+      const data=await r.json();
+      if(!r.ok)throw new Error(data.error?.message||"API error "+r.status);
+      const text=data.content?.filter(c=>c.type==="text").map(c=>c.text).join("")||"No response";
+      addMsg("assistant",text);
+    }catch(e){
+      typing.remove();
+      const err=h("div");err.style.cssText="text-align:center;padding:8px 16px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:8px;font-size:13px;color:var(--red);margin:0 auto";
+      err.textContent=e.message;msgs.appendChild(err);
+    }
+    formBtn.disabled=false;
+  }
+
+  renderEmpty();
+  page.appendChild(msgs);
+
+  const form=h("form");form.id="chat-form";
+  const formInput=h("input");formInput.type="text";formInput.placeholder="Ask about your health data...";
+  const formBtn=h("button");formBtn.type="submit";formBtn.textContent="Send";
+  form.appendChild(formInput);form.appendChild(formBtn);
+  form.onsubmit=e=>{e.preventDefault();send(formInput.value)};
+  page.appendChild(form);
+  container.appendChild(page);
+}
+
+// ── Router ──
+const PAGES={overview:renderOverview,sleep:renderSleep,activity:renderActivity,readiness:renderReadiness,heartrate:renderHeartRate,body:renderBody,workouts:renderWorkouts,chat:renderChat};
+const NAV_ITEMS=[
   {id:"overview",label:"Overview",icon:"\u25C9"},
   {id:"sleep",label:"Sleep",icon:"\u263E"},
   {id:"activity",label:"Activity",icon:"\u2197"},
@@ -581,54 +711,55 @@ const NAV=[
   {id:"chat",label:"Chat",icon:"\u2749"},
 ];
 
-function App(){
-  const[page,setPage]=useState("overview");
-  const{token,setToken,clear}=useContext(TokenCtx);
-  const[tokenInput,setTokenInput]=useState("");
-
-  if(!token){
-    return React.createElement("div",{style:{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}},
-      React.createElement("div",{style:{background:"var(--card)",border:"1px solid var(--border)",borderRadius:16,padding:32,maxWidth:400,width:"100%",margin:16}},
-        React.createElement("div",{style:{textAlign:"center",marginBottom:24}},
-          React.createElement("h1",{style:{fontSize:24,fontWeight:700,background:"linear-gradient(90deg,var(--blue),var(--purple))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}},"Oura Dashboard"),
-          React.createElement("p",{style:{fontSize:13,color:"var(--text2)",marginTop:8}},"Enter your Oura Personal Access Token")),
-        React.createElement("form",{onSubmit:e=>{e.preventDefault();if(tokenInput.trim())setToken(tokenInput.trim())},style:{display:"flex",flexDirection:"column",gap:16}},
-          React.createElement("input",{type:"password",value:tokenInput,onChange:e=>setTokenInput(e.target.value),placeholder:"Paste your token here...",
-            style:{padding:"12px 16px",background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:12,fontSize:14,color:"var(--text)",outline:"none"}}),
-          React.createElement("button",{type:"submit",disabled:!tokenInput.trim(),
-            style:{padding:"12px 16px",background:"linear-gradient(90deg,var(--blue),var(--purple))",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:500,cursor:"pointer",opacity:tokenInput.trim()?1:.5}},"Connect Oura Ring")),
-        React.createElement("p",{style:{fontSize:10,color:"var(--text2)",textAlign:"center",marginTop:16}},"Your token is stored locally and never leaves your browser.")));
-  }
-
-  const PAGES={overview:OverviewPage,sleep:SleepPage,activity:ActivityPage,readiness:ReadinessPage,heartrate:HeartRatePage,body:BodyMetricsPage,workouts:WorkoutsPage,chat:ChatPage};
-  const PageComponent=PAGES[page]||OverviewPage;
-
-  return React.createElement("div",{style:{display:"flex",minHeight:"100vh"}},
-    // Sidebar
-    React.createElement("nav",{style:{position:"fixed",left:0,top:0,height:"100%",width:220,background:"var(--bg2)",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",zIndex:50}},
-      React.createElement("div",{style:{padding:20,borderBottom:"1px solid var(--border)"}},
-        React.createElement("h1",{style:{fontSize:18,fontWeight:700,background:"linear-gradient(90deg,var(--blue),var(--purple))",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}},"Oura Dashboard"),
-        React.createElement("p",{style:{fontSize:10,color:"var(--text2)",marginTop:2}},"Health Analytics")),
-      React.createElement("div",{style:{flex:1,paddingTop:12,overflowY:"auto"}},
-        NAV.map(item=>React.createElement("button",{key:item.id,onClick:()=>setPage(item.id),
-          style:{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"10px 20px",fontSize:14,border:"none",cursor:"pointer",
-            background:page===item.id?"rgba(79,143,247,.1)":"transparent",
-            color:page===item.id?"var(--blue)":"var(--text2)",
-            borderRight:page===item.id?"2px solid var(--blue)":"2px solid transparent"}},
-          React.createElement("span",{style:{fontSize:16}},item.icon),item.label))),
-      React.createElement("div",{style:{padding:16,borderTop:"1px solid var(--border)"}},
-        React.createElement("button",{onClick:clear,style:{fontSize:10,color:"var(--text2)",background:"none",border:"none",cursor:"pointer"}},"Disconnect Ring"),
-        React.createElement("p",{style:{fontSize:10,color:"var(--text2)",marginTop:8}},"Powered by Oura API v2"))),
-    // Main content
-    React.createElement("main",{style:{marginLeft:220,flex:1,padding:24}},
-      React.createElement(PageComponent))
-  );
+function navigate(pageId){
+  currentPage=pageId;
+  document.querySelectorAll("#nav .links button").forEach(b=>{b.classList.toggle("active",b.dataset.page===pageId)});
+  const main=document.getElementById("main");
+  PAGES[pageId](main);
 }
 
-// ── Mount ──
-ReactDOM.createRoot(document.getElementById("root")).render(
-  React.createElement(TokenProvider,null,React.createElement(App))
-);
+function renderApp(){
+  const app=document.getElementById("app");app.innerHTML="";
+
+  if(!TOKEN){
+    const setup=h("div");setup.id="setup";
+    setup.innerHTML=`<div class="box"><h1>Oura Dashboard</h1><p class="sub">Enter your Oura Personal Access Token</p>
+      <input type="password" id="token-input" placeholder="Paste your token here...">
+      <button class="btn" id="token-btn" disabled>Connect Oura Ring</button>
+      <p class="note">Your token is stored locally and never leaves your browser.</p></div>`;
+    app.appendChild(setup);
+    setTimeout(()=>{
+      const inp=document.getElementById("token-input"),btn=document.getElementById("token-btn");
+      inp.oninput=()=>{btn.disabled=!inp.value.trim()};
+      btn.onclick=()=>{TOKEN=inp.value.trim();localStorage.setItem("oura_token",TOKEN);renderApp()};
+    },0);
+    return;
+  }
+
+  // Nav
+  const nav=h("nav");nav.id="nav";
+  nav.innerHTML=`<div class="logo"><h1>Oura Dashboard</h1><p>Health Analytics</p></div>`;
+  const links=h("div");links.className="links";
+  NAV_ITEMS.forEach(item=>{
+    const b=h("button");b.dataset.page=item.id;
+    b.innerHTML=`<span class="icon">${item.icon}</span>${item.label}`;
+    if(item.id===currentPage)b.className="active";
+    b.onclick=()=>navigate(item.id);
+    links.appendChild(b);
+  });
+  nav.appendChild(links);
+  const foot=h("div");foot.className="foot";
+  const dc=h("button");dc.textContent="Disconnect Ring";dc.onclick=()=>{TOKEN=null;localStorage.removeItem("oura_token");clearCache();renderApp()};
+  foot.appendChild(dc);
+  const pw=h("p");pw.textContent="Powered by Oura API v2";foot.appendChild(pw);
+  nav.appendChild(foot);
+  app.appendChild(nav);
+
+  const main=h("main");main.id="main";app.appendChild(main);
+  PAGES[currentPage](main);
+}
+
+renderApp();
 </script>
 </body>
 </html>
