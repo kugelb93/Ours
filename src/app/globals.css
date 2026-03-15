@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-card: #1a1a2e;
+  --bg-card-hover: #22223a;
+  --border-color: #2a2a3e;
+  --text-primary: #e4e4ef;
+  --text-secondary: #8888a0;
+  --accent-blue: #4f8ff7;
+  --accent-purple: #8b5cf6;
+  --accent-emerald: #34d399;
+  --accent-yellow: #fbbf24;
+  --accent-red: #f87171;
+  --accent-cyan: #22d3ee;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Score ring SVG */
+.score-ring {
+  transform: rotate(-90deg);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5e;
+}
+
+/* Chart tooltip */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+
+/* Chat messages */
+.chat-message-user {
+  background: linear-gradient(135deg, #4f8ff7 0%, #8b5cf6 100%);
+}
+
+.chat-message-assistant {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+/* Smooth transitions */
+* {
+  transition-property: background-color, border-color, color, opacity;
+  transition-duration: 150ms;
+}
+
+/* Card glow effect */
+.card-glow:hover {
+  box-shadow: 0 0 20px rgba(79, 143, 247, 0.1);
+}
