@@ -128,7 +128,7 @@ canvas{display:block;width:100%!important}
 const OURA="https://api.ouraring.com";
 // Deploy the worker from worker.js to your own Cloudflare account, then set the URL here.
 // Or use direct API (works if CORS is allowed or running locally).
-let PROXY_URL=localStorage.getItem("oura_proxy")||"";
+let PROXY_URL=localStorage.getItem("oura_proxy")||"https://ours.w-kugelberg.workers.dev/";
 function getApiUrl(ep,params){
   const u=new URL(`${OURA}/${ep}`);
   Object.entries(params).forEach(([k,v])=>{if(v)u.searchParams.set(k,v)});
