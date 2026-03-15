@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { clearStoredToken } from "@/lib/useOuraData";
 
 const navItems = [
   { href: "/", label: "Overview", icon: "\u25C9" },
@@ -46,7 +47,13 @@ export default function Navigation() {
           );
         })}
       </div>
-      <div className="p-4 border-t border-[var(--border-color)]">
+      <div className="p-4 border-t border-[var(--border-color)] space-y-2">
+        <button
+          onClick={() => { clearStoredToken(); window.location.reload(); }}
+          className="text-[10px] text-[var(--text-secondary)] hover:text-red-400 transition-colors"
+        >
+          Disconnect Ring
+        </button>
         <p className="text-[10px] text-[var(--text-secondary)]">Powered by Oura API v2</p>
       </div>
     </nav>

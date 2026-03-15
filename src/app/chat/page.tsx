@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Card from "@/components/Card";
+import { getStoredToken, fetchAllOuraData } from "@/lib/useOuraData";
 
 interface Message {
   role: "user" | "assistant";
@@ -24,7 +24,28 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ouraData, setOuraData] = useState<Record<string, unknown[]> | null>(null);
+  const [loadingData, setLoadingData] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Pre-fetch Oura data for chat context
+  useEffect(() => {
+    async function loadData() {
+      const token = getStoredToken();
+      if (!token) {
+        setLoadingData(false);
+        return;
+      }
+      try {
+        const data = await fetchAllOuraData(token, 30);
+        setOuraData(data);
+      } catch {
+        // Chat will still work, just without data context
+      }
+      setLoadingData(false);
+    }
+    loadData();
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,6 +67,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           message: content.trim(),
           history: messages,
+          ouraData: ouraData || {},
         }),
       });
 
@@ -75,6 +97,7 @@ export default function ChatPage() {
         <h2 className="text-2xl font-bold">Health Chat</h2>
         <p className="text-sm text-[var(--text-secondary)] mt-1">
           Ask questions about your Oura Ring data. Powered by Claude AI.
+          {loadingData && " Loading your data..."}
         </p>
       </div>
 
