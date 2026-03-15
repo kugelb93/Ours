@@ -124,13 +124,30 @@ canvas{display:block;width:100%!important}
 <body>
 <div id="app"></div>
 <script>
-// ── Oura API ──
+// ── Oura API (via Cloudflare Worker proxy for CORS) ──
 const OURA="https://api.ouraring.com";
-async function ouraFetch(ep,token,params={}){
+// Deploy the worker from worker.js to your own Cloudflare account, then set the URL here.
+// Or use direct API (works if CORS is allowed or running locally).
+let PROXY_URL=localStorage.getItem("oura_proxy")||"";
+function getApiUrl(ep,params){
   const u=new URL(`${OURA}/${ep}`);
   Object.entries(params).forEach(([k,v])=>{if(v)u.searchParams.set(k,v)});
-  const r=await fetch(u,{headers:{Authorization:`Bearer ${token}`}});
-  if(!r.ok)throw new Error(`Oura ${r.status}`);
+  if(PROXY_URL){
+    const p=new URL(PROXY_URL);
+    p.searchParams.set("url",u.toString());
+    return p.toString();
+  }
+  return u.toString();
+}
+async function ouraFetch(ep,token,params={}){
+  const url=getApiUrl(ep,params);
+  const r=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
+  if(!r.ok){
+    const t=await r.text().catch(()=>"");
+    if(r.status===0||t.includes("CORS")||t.includes("Failed to fetch"))
+      throw new Error("CORS blocked. Deploy the Cloudflare Worker proxy (see Settings).");
+    throw new Error(`Oura ${r.status}: ${t}`);
+  }
   return r.json();
 }
 function dateRange(d){const e=new Date(),s=new Date();s.setDate(s.getDate()-d);return{start_date:s.toISOString().split("T")[0],end_date:e.toISOString().split("T")[0]}}
@@ -698,8 +715,85 @@ function renderChat(container){
   container.appendChild(page);
 }
 
+function renderSettings(container){
+  container.innerHTML="";
+  const wrap=h("div");wrap.style.cssText="max-width:600px";
+  const hdr=h("h2");hdr.style.cssText="font-size:24px;font-weight:700;margin-bottom:8px";hdr.textContent="Settings";
+  const sub=h("p");sub.style.cssText="font-size:13px;color:var(--t2);margin-bottom:24px";sub.textContent="Configure your API connections";
+  wrap.appendChild(hdr);wrap.appendChild(sub);
+
+  // Proxy URL
+  const pc=card("CORS Proxy (Required for GitHub Pages)","The Oura API blocks browser requests. Deploy the Cloudflare Worker below and paste its URL here.");
+  const proxyRow=h("div");proxyRow.style.cssText="display:flex;gap:8px;margin-bottom:12px";
+  const proxyInp=h("input");proxyInp.type="text";proxyInp.value=PROXY_URL;proxyInp.placeholder="https://your-worker.your-subdomain.workers.dev";
+  proxyInp.style.cssText="flex:1;padding:10px 14px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;font-size:13px;color:var(--t1);outline:none";
+  const proxyBtn=h("button");proxyBtn.textContent="Save";proxyBtn.style.cssText="padding:10px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px";
+  proxyBtn.onclick=()=>{PROXY_URL=proxyInp.value.trim();localStorage.setItem("oura_proxy",PROXY_URL);clearCache();proxyStatus.textContent="Saved! Data will reload.";proxyStatus.style.color="var(--green)"};
+  proxyRow.appendChild(proxyInp);proxyRow.appendChild(proxyBtn);pc.appendChild(proxyRow);
+  const proxyStatus=h("p");proxyStatus.style.cssText="font-size:12px;color:var(--t2)";proxyStatus.textContent=PROXY_URL?"Proxy configured":"No proxy set \u2014 API calls may fail due to CORS";pc.appendChild(proxyStatus);
+
+  // Worker code
+  const workerInfo=h("details");workerInfo.style.cssText="margin-top:16px";
+  workerInfo.innerHTML=`<summary style="cursor:pointer;font-size:13px;color:var(--blue);margin-bottom:8px">How to deploy the Cloudflare Worker (free, 2 minutes)</summary>
+  <ol style="font-size:12px;color:var(--t2);line-height:1.8;padding-left:20px">
+    <li>Go to <a href="https://workers.cloudflare.com" target="_blank" style="color:var(--blue)">workers.cloudflare.com</a> and sign up (free)</li>
+    <li>Click "Create a Worker"</li>
+    <li>Replace the code with the snippet below</li>
+    <li>Click "Deploy"</li>
+    <li>Copy the worker URL and paste it above</li>
+  </ol>
+  <pre style="background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;padding:16px;font-size:11px;color:var(--t1);overflow-x:auto;margin-top:8px;white-space:pre-wrap">export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const target = url.searchParams.get("url");
+    if (!target) return new Response("Missing ?url= param", { status: 400 });
+
+    const headers = new Headers();
+    // Forward auth header
+    if (request.headers.get("Authorization"))
+      headers.set("Authorization", request.headers.get("Authorization"));
+
+    const resp = await fetch(target, { headers });
+    const body = await resp.text();
+
+    return new Response(body, {
+      status: resp.status,
+      headers: {
+        "Content-Type": resp.headers.get("Content-Type") || "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+      },
+    });
+  },
+};</pre>`;
+  pc.appendChild(workerInfo);
+  wrap.appendChild(pc);
+
+  // Anthropic key
+  const ac=card("Anthropic API Key (for Chat)","Required for the AI chat feature. Calls Claude directly from your browser.");
+  const akRow=h("div");akRow.style.cssText="display:flex;gap:8px";
+  const akInp=h("input");akInp.type="password";akInp.value=ANTHROPIC_KEY;akInp.placeholder="sk-ant-...";
+  akInp.style.cssText="flex:1;padding:10px 14px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;font-size:13px;color:var(--t1);outline:none";
+  const akBtn=h("button");akBtn.textContent="Save";akBtn.style.cssText="padding:10px 20px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px";
+  const akStatus=h("p");akStatus.style.cssText="font-size:12px;color:var(--t2);margin-top:8px";akStatus.textContent=ANTHROPIC_KEY?"Key configured":"No key set";
+  akBtn.onclick=()=>{ANTHROPIC_KEY=akInp.value.trim();localStorage.setItem("anthropic_key",ANTHROPIC_KEY);akStatus.textContent="Saved!";akStatus.style.color="var(--green)"};
+  akRow.appendChild(akInp);akRow.appendChild(akBtn);ac.appendChild(akRow);ac.appendChild(akStatus);
+  wrap.appendChild(ac);
+
+  // Oura token
+  const tc=card("Oura Token");
+  const tokenInfo=h("p");tokenInfo.style.cssText="font-size:12px;color:var(--t2);margin-bottom:12px";tokenInfo.textContent="Your token is stored locally in your browser.";
+  tc.appendChild(tokenInfo);
+  const dcBtn=h("button");dcBtn.textContent="Disconnect Ring";dcBtn.style.cssText="padding:8px 16px;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:8px;font-size:13px";
+  dcBtn.onclick=()=>{TOKEN=null;localStorage.removeItem("oura_token");clearCache();renderApp()};
+  tc.appendChild(dcBtn);
+  wrap.appendChild(tc);
+
+  container.appendChild(wrap);
+}
+
 // ── Router ──
-const PAGES={overview:renderOverview,sleep:renderSleep,activity:renderActivity,readiness:renderReadiness,heartrate:renderHeartRate,body:renderBody,workouts:renderWorkouts,chat:renderChat};
+const PAGES={overview:renderOverview,sleep:renderSleep,activity:renderActivity,readiness:renderReadiness,heartrate:renderHeartRate,body:renderBody,workouts:renderWorkouts,chat:renderChat,settings:renderSettings};
 const NAV_ITEMS=[
   {id:"overview",label:"Overview",icon:"\u25C9"},
   {id:"sleep",label:"Sleep",icon:"\u263E"},
@@ -709,6 +803,7 @@ const NAV_ITEMS=[
   {id:"body",label:"Body",icon:"\u2726"},
   {id:"workouts",label:"Workouts",icon:"\u26A1"},
   {id:"chat",label:"Chat",icon:"\u2749"},
+  {id:"settings",label:"Settings",icon:"\u2699"},
 ];
 
 function navigate(pageId){
@@ -749,7 +844,6 @@ function renderApp(){
   });
   nav.appendChild(links);
   const foot=h("div");foot.className="foot";
-  const dc=h("button");dc.textContent="Disconnect Ring";dc.onclick=()=>{TOKEN=null;localStorage.removeItem("oura_token");clearCache();renderApp()};
   foot.appendChild(dc);
   const pw=h("p");pw.textContent="Powered by Oura API v2";foot.appendChild(pw);
   nav.appendChild(foot);
